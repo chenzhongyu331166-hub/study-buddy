@@ -431,4 +431,14 @@ def _500(e):
 
 if __name__ == "__main__":
     print("StudyBuddy -> http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=False, threaded=True)
+    import time
+    for attempt in range(6):
+        try:
+            app.run(host="127.0.0.1", port=5000, debug=False, threaded=True)
+            break
+        except OSError as e:
+            # 端口被旧实例占着(如开机时序竞态)：等它退干净再试
+            if attempt == 5:
+                raise
+            print(f"port 5000 busy ({e})，3秒后重试 {attempt + 1}/5")
+            time.sleep(3)
