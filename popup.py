@@ -27,9 +27,15 @@ ACC = "#4f8cff"
 
 def load_json(p, default):
     try:
-        with open(p, "r", encoding="utf-8") as f:
+        with open(p, "r", encoding="utf-8-sig") as f:
             return json.load(f)
+    except FileNotFoundError:
+        return default
     except Exception:
+        try:
+            os.replace(p, str(p) + ".corrupt")
+        except Exception:
+            pass
         return default
 
 

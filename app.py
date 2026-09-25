@@ -25,11 +25,19 @@ _LOCK = threading.Lock()
 
 # ---------- 基础工具 ----------
 def load_json(path, default=None):
+    d = default if default is not None else {}
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8-sig") as f:
             return json.load(f)
+    except FileNotFoundError:
+        return d
     except Exception:
-        return default if default is not None else {}
+        # 文件损坏(如带BOM/写坏)：备份原文件再回落，避免下一次保存把数据覆盖没
+        try:
+            os.replace(path, str(path) + ".corrupt")
+        except Exception:
+            pass
+        return d
 
 
 def save_json(path, obj):
