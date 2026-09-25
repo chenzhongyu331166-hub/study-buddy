@@ -1,4 +1,4 @@
-# 学习台一键启动：服务没起就拉起，然后打开浏览器
+# study-buddy one-click launcher: start server if down, then open browser
 $url = 'http://127.0.0.1:5000'
 $root = 'D:\VibeBuddy\study-buddy'
 $up = $false
