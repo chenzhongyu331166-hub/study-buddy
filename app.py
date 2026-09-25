@@ -7,6 +7,7 @@ import os
 import re
 import datetime
 import threading
+import time
 import traceback
 from pathlib import Path
 
@@ -262,42 +263,61 @@ def api_checkin():
 import html as html_mod
 import requests as req
 
-_AI_CACHE = {}
+_AI_CACHE = {}   # base, key, ids, cfg_model, ts —— key只在内存，绝不写入state/GitHub
+
+AI_PREFER = ["Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3.5-122B-A10B",
+             "deepseek-ai/DeepSeek-V4-Pro", "MiniMax/MiniMax-M1-80k"]
 
 
-def ai_config():
-    if _AI_CACHE:
+def ai_meta():
+    """读opencode.jsonc并向魔搭拉可用模型列表(/models)，10分钟缓存。"""
+    now = time.time()
+    if _AI_CACHE and now - _AI_CACHE.get("ts", 0) < 600:
         return _AI_CACHE
     raw = OPencode_CFG.read_text(encoding="utf-8-sig")
     raw = "\n".join(l for l in raw.splitlines() if not l.strip().startswith("//"))
     cfg = json.loads(raw)
     opts = cfg["provider"]["modelscope"]["options"]
     model_full = cfg.get("model", "")
-    model = model_full.split("/", 1)[1] if model_full.startswith("modelscope/") else model_full
+    cfg_model = model_full.split("/", 1)[1] if model_full.startswith("modelscope/") else model_full
     base = opts["baseURL"].rstrip("/")
     key = opts["apiKey"]
-    # 配置里的模型可能已下线，向 /models 校验并按偏好回退
-    prefer = [model,
-              "Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3.5-122B-A10B",
-              "deepseek-ai/DeepSeek-V4-Pro", "MiniMax/MiniMax-M1-80k"]
+    ids = []
     try:
         r = req.get(base + "/models", headers={"Authorization": "Bearer " + key}, timeout=20)
-        ids = [m.get("id") for m in r.json().get("data", [])]
-        if ids:
-            model = next((c for c in prefer if c and c in ids), ids[0])
+        ids = [m.get("id") for m in r.json().get("data", []) if m.get("id")]
     except Exception:
         pass
-    _AI_CACHE.update(base=base, key=key, model=model)
+    _AI_CACHE.update(base=base, key=key, ids=ids, cfg_model=cfg_model, ts=now)
     return _AI_CACHE
 
 
+def current_model():
+    """当前模型：用户下拉选过的 > 配置默认(在线时) > 偏好回退 > 列表第一个"""
+    m = ai_meta()
+    ids = m["ids"]
+    saved = None
+    try:
+        with _LOCK:
+            saved = (get_state().get("ai") or {}).get("model")
+    except Exception:
+        saved = None
+    if saved and (not ids or saved in ids):
+        return saved
+    prefer = [m.get("cfg_model")] + AI_PREFER
+    if ids:
+        return next((c for c in prefer if c in ids), ids[0])
+    return next((c for c in prefer if c), "Qwen/Qwen3.5-397B-A17B")
+
+
 def ai_chat(messages, system=None, temperature=0.7, max_tokens=2048, thinking=False):
-    cfg = ai_config()
+    cfg = ai_meta()
+    model = current_model()
     msgs = []
     if system:
         msgs.append({"role": "system", "content": system})
     msgs.extend(messages)
-    payload = {"model": cfg["model"], "messages": msgs,
+    payload = {"model": model, "messages": msgs,
                "temperature": temperature, "max_tokens": max_tokens,
                "enable_thinking": bool(thinking)}
     r = req.post(cfg["base"] + "/chat/completions",
@@ -341,7 +361,31 @@ def api_ai():
              "q": first_user[:80]}
         ]
         save_state(st)
-    return jsonify({"reply": reply, "usage": usage, "model": ai_config()["model"]})
+    return jsonify({"reply": reply, "usage": usage, "model": current_model()})
+
+
+@app.route("/api/models")
+def api_models():
+    """像chatbox一样：实时拉魔搭可用模型列表供前端下拉选择"""
+    m = ai_meta()
+    return jsonify({"models": m["ids"], "current": current_model(),
+                    "cfg_default": m.get("cfg_model"), "online": bool(m["ids"])})
+
+
+@app.route("/api/model", methods=["POST"])
+def api_model():
+    body = request.get_json(force=True, silent=True) or {}
+    model = (body.get("model") or "").strip()
+    if not model:
+        return jsonify({"error": "缺少model"}), 400
+    m = ai_meta()
+    if m["ids"] and model not in m["ids"]:
+        return jsonify({"error": "该模型不在可用列表", "models": m["ids"]}), 400
+    with _LOCK:
+        st = get_state()
+        st.setdefault("ai", {})["model"] = model
+        save_state(st)
+    return jsonify({"current": model})
 
 
 # ---------- 明天的资源：确认后抓取存档 ----------

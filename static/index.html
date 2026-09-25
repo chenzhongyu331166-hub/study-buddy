@@ -26,6 +26,7 @@ main{padding:22px;max-width:1100px;margin:0 auto}
 .card h3{font-size:14px;color:var(--dim);margin:12px 0 6px}
 .muted{color:var(--dim);font-size:13px}
 .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--dim);margin-right:6px}
+.modelsel{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 8px;font-size:12px;color:var(--fg);max-width:340px;cursor:pointer}
 .task{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
 .task input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px}
 .task.done{opacity:.55}
@@ -153,7 +154,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 
 <section class="page" id="p-ai">
   <div class="card">
-    <h2>AI老师 <span class="tag" id="aiModel"></span></h2>
+    <h2>AI老师 <select id="aiModelSel" class="modelsel" title="选择魔搭可用模型(自动拉取列表)"><option>模型列表加载中...</option></select></h2>
     <div class="muted" style="margin-bottom:8px">基于今天的大纲与作业提问；额度来自魔搭，放开学。答题、讲解、批改都行。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="btn ghost" onclick="askAI('explain')">讲解知识点</button>
@@ -186,7 +187,7 @@ function post(u,b){return api(u,{method:'POST',headers:{'Content-Type':'applicat
 
 // ---------- 导航 ----------
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.p)};
-function go(p){$$('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.p===p));$$('.page').forEach(x=>x.classList.toggle('on',x.id==='p-'+p));if(p==='progress')renderProgress();if(p==='resource')renderResource();if(p==='ach')renderAch()}
+function go(p){$$('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.p===p));$$('.page').forEach(x=>x.classList.toggle('on',x.id==='p-'+p));if(p==='progress')renderProgress();if(p==='resource')renderResource();if(p==='ach')renderAch();if(p==='ai'&&!MODELS_READY)loadModels()}
 
 function toast(msg){const t=$('#toast');t.innerHTML=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',5000)}
 
@@ -315,6 +316,21 @@ $('#fetchBtn').onclick=async()=>{
 };
 
 // ---------- AI老师 ----------
+let MODELS_READY=false;
+async function loadModels(){
+  try{
+    const r=await api('/api/models');
+    const sel=$('#aiModelSel');
+    const list=(r.models&&r.models.length)?r.models:[r.current];
+    if(r.current&&!list.includes(r.current))list.unshift(r.current);
+    sel.innerHTML=list.map(m=>`<option value="${esc(m)}"${m===r.current?' selected':''}>${esc(m)}</option>`).join('');
+    MODELS_READY=true;
+  }catch(e){$('#aiModelSel').innerHTML=`<option>模型列表获取失败(${esc(e.message)})</option>`}
+}
+$('#aiModelSel').onchange=async e=>{
+  try{const r=await post('/api/model',{model:e.target.value});toast('已切换模型：'+r.current)}
+  catch(err){toast('切换失败：'+err.message);loadModels()}
+};
 function sysPrompt(){
   if(!TODAY||!TODAY.plan_day)return'你是学习台AI老师，中文回答。';
   const p=TODAY.plan_day;
@@ -334,7 +350,9 @@ async function send(text){
   CHAT.push({role:'user',content:text});renderChat();$('#chatIn').value='';
   const load={role:'assistant',content:'思考中...'};CHAT.push(load);renderChat();
   try{const r=await post('/api/ai',{messages:CHAT.filter(m=>m!==load).slice(-16),system:sysPrompt(),thinking:$('#aiThink').checked});
-    load.content=r.reply;$('#aiModel').textContent=r.model;
+    load.content=r.reply;
+    const sel=$('#aiModelSel');
+    if(r.model&&[...sel.options].some(o=>o.value===r.model))sel.value=r.model;
     $('#aiStat').textContent='本次tokens:'+(r.usage.total_tokens||'?')+' · 累计请教:'+(TODAY?TODAY.stats.ai_calls+1:'?')+'次';
   }catch(e){load.content='⚠ '+e.message}
   renderChat();
@@ -363,7 +381,7 @@ async function renderAch(){
 (async function(){
   try{
     PLAN=await api('/api/plan');TODAY=await api('/api/today');
-    renderToday();renderOutline();renderChat();
+    renderToday();renderOutline();renderChat();loadModels();
   }catch(e){document.body.insertAdjacentHTML('afterbegin','<div class="card" style="margin:12px;color:#ffb3b3">加载失败：'+e.message+'，请确认 app.py 正在运行</div>')}
 })();
 </script>
