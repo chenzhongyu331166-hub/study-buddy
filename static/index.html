@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学习台 StudyBuddy · 84天vibecoding</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+  --fg:#e6e9ef; --dim:#98a1b0; --acc:#4f8cff; --ok:#39c07a; --warn:#e0a63c; --bad:#e05c5c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 "Microsoft YaHei",system-ui,sans-serif}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+header{display:flex;align-items:center;gap:16px;padding:14px 22px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header h1{font-size:18px}
+header .sub{color:var(--dim);font-size:12px}
+nav{display:flex;gap:6px;margin-left:auto}
+nav button{background:transparent;border:1px solid var(--line);color:var(--dim);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:14px}
+nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+main{padding:22px;max-width:1100px;margin:0 auto}
+.page{display:none}.page.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.card h2{font-size:16px;margin-bottom:10px}
+.card h3{font-size:14px;color:var(--dim);margin:12px 0 6px}
+.muted{color:var(--dim);font-size:13px}
+.tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--dim);margin-right:6px}
+.task{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
+.task input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px}
+.task.done{opacity:.55}
+.task.done .tt{text-decoration:line-through}
+.task .tn{color:var(--dim);font-size:12px;min-width:26px}
+.res{padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.res:last-child{border-bottom:none}
+.res .src{color:var(--dim);font-size:12px}
+.btn{background:var(--acc);border:none;color:#fff;padding:9px 16px;border-radius:9px;cursor:pointer;font-size:14px}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
+.btn.good{background:var(--ok)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:9px;padding:9px 11px;font:inherit;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+.stat .v{font-size:26px;font-weight:700;color:var(--acc)}
+.stat .k{font-size:12px;color:var(--dim)}
+.bar{height:9px;background:var(--panel2);border-radius:99px;overflow:hidden;margin:5px 0 12px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--ok))}
+.cal{display:grid;grid-template-columns:repeat(14,1fr);gap:6px}
+.cal .d{aspect-ratio:1;border-radius:7px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dim);cursor:pointer}
+.cal .d.partial{background:#27406e;color:#cfe0ff}
+.cal .d.full{background:var(--ok);color:#062;border-color:var(--ok)}
+.cal .d.today{outline:2px solid var(--warn)}
+.stage{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--panel2)}
+.stage .hd{display:flex;justify-content:space-between;cursor:pointer}
+.stage .hd b{font-size:14px}
+.dayrow{display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px dashed var(--line);font-size:14px;cursor:pointer}
+.dayrow:hover{background:#20242e}
+.dayrow .no{width:44px;color:var(--acc);font-weight:600}
+.dayrow .dt{width:96px;color:var(--dim);font-size:12px}
+.dayrow .st3{width:70px;font-size:12px}
+.chat{height:430px;overflow-y:auto;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px}
+.msg{margin-bottom:12px;white-space:pre-wrap}
+.msg .who{font-size:12px;color:var(--dim);margin-bottom:3px}
+.msg.me .bd{background:#243252;border-radius:10px;padding:9px 12px;display:inline-block}
+.msg.ai .bd{background:#1d2a22;border-radius:10px;padding:9px 12px;display:inline-block;border:1px solid #2c4436}
+.ach{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel2);opacity:.45}
+.ach.got{opacity:1;border-color:var(--ok);background:#17281f}
+.ach b{display:block;margin-bottom:4px}
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.toast{position:fixed;right:22px;top:70px;background:#1d3b2a;border:1px solid var(--ok);color:#d9ffe9;padding:13px 18px;border-radius:10px;z-index:99;max-width:320px;display:none}
+#detail{min-height:120px}
+.loading{color:var(--dim);font-size:13px}
+.fileitem{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px dashed var(--line);font-size:13px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}.cal{grid-template-columns:repeat(7,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>学习台 StudyBuddy</h1>
+    <div class="sub" id="hdSub">84天 vibecoding · AI应用开发 + 数据分析 + 408考研基础</div>
+  </div>
+  <nav id="nav">
+    <button data-p="today" class="on">今日</button>
+    <button data-p="outline">大纲</button>
+    <button data-p="progress">进度</button>
+    <button data-p="resource">资源</button>
+    <button data-p="ai">AI老师</button>
+    <button data-p="ach">成就</button>
+  </nav>
+</header>
+<main>
+
+<section class="page on" id="p-today">
+  <div class="card" id="todayHead"></div>
+  <div class="grid2">
+    <div class="card">
+      <h2>今日任务</h2>
+      <div id="taskList"></div>
+      <h3>课后编程作业(自己写，不会就问AI)</h3>
+      <div class="task" id="hwBox">
+        <input type="checkbox" id="hwChk">
+        <div><span class="tt" id="hwTitle"></span>
+          <div class="muted" id="hwDesc" style="margin-top:4px"></div>
+          <div class="muted" id="hwEg" style="margin-top:4px"></div>
+        </div>
+      </div>
+      <h3>作业笔记(卡在哪/怎么解决的)</h3>
+      <textarea id="hwNote" rows="3" placeholder="写代码的过程记录，AI老师看得到..."></textarea>
+      <div style="margin-top:8px"><button class="btn ghost" id="saveNote">保存笔记</button></div>
+    </div>
+    <div class="card">
+      <h2>今日知识点</h2>
+      <div id="kpList"></div>
+      <h3>教材资源(点击直达)</h3>
+      <div id="resList"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="askAI('explain')">让AI老师讲今天的第一知识点</button>
+        <button class="btn ghost" onclick="go('resource')">去看明天的资源</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="p-outline">
+  <div class="card"><h2>84天大纲 · 12阶段</h2><div class="muted">点阶段展开，点某天查看详情(所有资源均为实测可访问的教材章节)</div></div>
+  <div id="stageList"></div>
+  <div class="card" id="detail"><h2>天详情</h2><div class="muted">点上面任意一天</div></div>
+</section>
+
+<section class="page" id="p-progress">
+  <div class="card"><h2>总览</h2><div class="stats" id="statBox"></div></div>
+  <div class="card"><h2>阶段完成度</h2><div id="stageBars"></div></div>
+  <div class="card"><h2>84天打卡日历</h2>
+    <div class="muted" style="margin-bottom:8px">灰=未开始 / 蓝=任务部分完成 / 绿=任务全完成(含作业更亮)</div>
+    <div class="cal" id="calBox"></div>
+  </div>
+</section>
+
+<section class="page" id="p-resource">
+  <div class="card">
+    <h2>明天学这个，确认吗？</h2>
+    <div class="muted">今天收尾时点这里：确认后自动抓取明天教材正文存到本地 resources/，附来源可核对(防AI瞎编)。</div>
+    <div id="tomorrowInfo" style="margin:10px 0"></div>
+    <button class="btn good" id="fetchBtn">今天学完 → 确认明天学这个 → 抓取配置</button>
+    <div id="fetchResult" style="margin-top:12px"></div>
+  </div>
+  <div class="card"><h2>今日资源</h2><div id="resList2"></div></div>
+  <div class="card"><h2>已抓取的资料存档</h2><div id="fileList" class="loading">加载中...</div></div>
+</section>
+
+<section class="page" id="p-ai">
+  <div class="card">
+    <h2>AI老师 <span class="tag" id="aiModel"></span></h2>
+    <div class="muted" style="margin-bottom:8px">基于今天的大纲与作业提问；额度来自魔搭，放开学。答题、讲解、批改都行。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn ghost" onclick="askAI('explain')">讲解知识点</button>
+      <button class="btn ghost" onclick="askAI('quiz')">出3道自测题(问答)</button>
+      <button class="btn ghost" onclick="askAI('hw')">帮我看看作业怎么起步</button>
+      <button class="btn ghost" onclick="askAI('review')">批改我贴的作业代码</button>
+      <button class="btn ghost" onclick="clearChat()">清空对话</button>
+    </div>
+    <div class="chat" id="chatBox"></div>
+    <textarea id="chatIn" rows="3" placeholder="输入问题，Enter发送(Ctrl+Enter换行)..."></textarea>
+    <div style="margin-top:8px"><button class="btn" id="sendBtn">发送</button>
+      <label class="muted" style="margin-left:10px"><input type="checkbox" id="aiThink"> 深度思考(慢而准，批改作业时开)</label>
+      <span class="muted" id="aiStat" style="margin-left:10px"></span></div>
+  </div>
+</section>
+
+<section class="page" id="p-ach">
+  <div class="card"><h2>成就墙</h2><div class="muted" id="achSum"></div></div>
+  <div class="achgrid" id="achBox"></div>
+</section>
+
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let PLAN=null, TODAY=null, CHAT=JSON.parse(localStorage.getItem('chat')||'[]');
+
+async function api(u,opt){const r=await fetch(u,opt);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
+function post(u,b){return api(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}
+
+// ---------- 导航 ----------
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.p)};
+function go(p){$$('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.p===p));$$('.page').forEach(x=>x.classList.toggle('on',x.id==='p-'+p));if(p==='progress')renderProgress();if(p==='resource')renderResource();if(p==='ach')renderAch()}
+
+function toast(msg){const t=$('#toast');t.innerHTML=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',5000)}
+
+// ---------- 今日 ----------
+function stageOf(d){return PLAN.stages.find(s=>{const[a,b]=s.range.slice(1).split('-').map(Number);return d>=a&&d<=b})}
+
+function renderToday(){
+  const t=TODAY, pd=t.plan_day, st=stageOf(t.day);
+  $('#hdSub').textContent=`D${t.day}/84 · ${t.date} · 连续${t.stats.streak}天 · 总进度${t.stats.percent}%`;
+  $('#todayHead').innerHTML=`<h2>D${t.day} ${pd?pd.title:'计划外日期(不在84天内)'}</h2>
+    <div>${pd?`<span class="tag">${st?st.range+' '+st.name:''}</span><span class="tag">阶段目标：${st?st.goal:''}</span>`:''}</div>
+    <div class="muted" style="margin-top:6px">完成任务打勾即可关掉右下角提醒；作业完成也打勾。</div>`;
+  if(!pd){$('#taskList').innerHTML='<div class="muted">今天不在计划里，休息或补进度。</div>';return}
+  $('#taskList').innerHTML=pd.tasks.map((x,i)=>`
+    <label class="task ${t.entry.tasks[i]?'done':''}">
+      <input type="checkbox" data-i="${i}" ${t.entry.tasks[i]?'checked':''}>
+      <span class="tn">任务${i+1}</span><span class="tt">${x}</span></label>`).join('');
+  $$('#taskList input').forEach(c=>c.onchange=async()=>{
+    try{const r=await post('/api/checkin',{idx:+c.dataset.i,done:c.checked});
+      TODAY.entry=r.entry;TODAY.stats=r.stats;_stateCache=null;renderToday();
+      if(r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b><br>'+r.new_achievements.map(a=>a.desc).join('<br>'));
+    }catch(e){alert(e.message);c.checked=!c.checked}
+  });
+  $('#hwTitle').textContent=pd.hw.t;
+  $('#hwDesc').textContent=pd.hw.d;
+  $('#hwEg').textContent='期望：'+pd.hw.e;
+  $('#hwChk').checked=!!t.entry.hw;
+  $('#hwBox').classList.toggle('done',!!t.entry.hw);
+  $('#hwChk').onchange=async e=>{
+    try{const r=await post('/api/checkin',{hw:e.target.checked});
+      TODAY.entry=r.entry;TODAY.stats=r.stats;_stateCache=null;renderToday();
+      if(r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
+    }catch(err){alert(err.message)}
+  };
+  $('#hwNote').value=t.entry.hw_note||'';
+  $('#kpList').innerHTML=pd.kp.map(k=>`<div class="res">· ${k}</div>`).join('');
+  const resHtml=pd.res.map((r,i)=>`<div class="res"><a href="${r.u}" target="_blank">${i+1}. ${r.t}</a><div class="src">来源：${r.src}</div></div>`).join('');
+  $('#resList').innerHTML=resHtml;$('#resList2').innerHTML=resHtml;
+}
+$('#saveNote').onclick=async()=>{try{await post('/api/checkin',{hw_note:$('#hwNote').value});toast('笔记已保存')}catch(e){alert(e.message)}};
+
+// ---------- 大纲 ----------
+function renderOutline(){
+  $('#stageList').innerHTML=PLAN.stages.map(s=>`
+    <div class="stage"><div class="hd" data-s="${s.stage}">
+      <b>阶段${s.stage} ${s.name}</b><span class="muted">${s.range} · ${s.goal}</span></div>
+      <div class="days" id="stg${s.stage}" style="display:none;margin-top:8px"></div></div>`).join('');
+  $$('.stage .hd').forEach(h=>h.onclick=()=>{
+    const box=$('#stg'+h.dataset.s);
+    if(box.style.display==='none'){
+      const s=PLAN.stages.find(x=>x.stage==h.dataset.s);
+      const[a,b]=s.range.slice(1).split('-').map(Number);
+      box.innerHTML='';for(let n=a;n<=b;n++){const d=PLAN.days[n-1];
+        box.insertAdjacentHTML('beforeend',`<div class="dayrow" data-d="${n}">
+          <span class="no">D${n}</span><span class="dt">${d.date}</span>
+          <span class="st3 muted" id="dr${n}"></span><span>${d.title}</span></div>`)}
+      $$('#stg'+h.dataset.s+' .dayrow').forEach(r=>r.onclick=()=>showDay(+r.dataset.d));
+      box.style.display='block';markDays();
+    }else box.style.display='none';
+  });
+}
+let _stateCache=null;
+async function markDays(){
+  try{if(!_stateCache)_stateCache=(await api('/api/state')).state;
+    for(let n=1;n<=84;n++){const d=PLAN.days[n-1],e=_stateCache.checkins[d.date]||{tasks:[]};
+      const done=(e.tasks||[]).filter(Boolean).length;
+      const el=$('#dr'+n);if(el)el.textContent=((done?'任务'+done+'/3':'')+(e.hw?' +作业':'')).trim();
+    }
+  }catch(e){}
+}
+function showDay(n){
+  const d=PLAN.days[n-1];
+  $('#detail').innerHTML=`<h2>D${n} ${d.title}</h2>
+    <div class="muted">${d.date} · 阶段${d.stage}</div>
+    <h3>任务</h3>${d.tasks.map((x,i)=>`<div class="res">${i+1}. ${x}</div>`).join('')}
+    <h3>知识点</h3><div class="res">${d.kp.join(' · ')}</div>
+    <h3>资源</h3>${d.res.map((r,i)=>`<div class="res"><a href="${r.u}" target="_blank">${i+1}. ${r.t}</a><div class="src">${r.src}</div></div>`).join('')}
+    <h3>作业：${d.hw.t}</h3><div class="res">${d.hw.d}</div><div class="muted">期望：${d.hw.e}</div>`;
+  $('#detail').scrollIntoView({behavior:'smooth'});
+}
+
+// ---------- 进度 ----------
+async function renderProgress(){
+  const s=await api('/api/state');window._state=s;const st=s.stats;
+  $('#statBox').innerHTML=[
+    ['总进度',st.percent+'%','打卡任务 '+st.done_tasks+'/'+st.total_tasks],
+    ['连续天数',st.streak,'任务全完成的连续天数'],
+    ['编程作业',st.hw_done,'次'],['全勤天数',st.full_days,'任务+作业都完成'],
+    ['AI请教',st.ai_calls,'次'],['已抓资源',st.fetched_days,'天'],
+  ].map(x=>`<div class="stat"><div class="v">${x[1]}</div><div class="k">${x[0]}</div><div class="k">${x[2]||''}</div></div>`).join('');
+  $('#stageBars').innerHTML=PLAN.stages.map(s2=>`
+    <div><span class="muted">阶段${s2.stage} ${s2.name}(${s2.range}) ${st.stage_pct[s2.stage]||0}%</span>
+    <div class="bar"><i style="width:${st.stage_pct[s2.stage]||0}%"></i></div></div>`).join('');
+  let html='';
+  for(let n=1;n<=84;n++){const d=PLAN.days[n-1],e=s.state.checkins[d.date]||{tasks:[],hw:false};
+    const done=(e.tasks||[]).filter(Boolean).length;
+    const cls=done===3?'full':(done>0?'partial':'');
+    html+=`<div class="d ${cls}" title="D${n} ${d.title} 任务${done}/3${e.hw?' +作业':''}" onclick="showDay(${n});go('outline')">${n}</div>`}
+  $('#calBox').innerHTML=html;
+  const tIdx=PLAN.days.findIndex(d=>d.date===TODAY.date);
+  if(tIdx>=0)$$('#calBox .d')[tIdx].classList.add('today');
+}
+
+// ---------- 资源 ----------
+async function renderResource(){
+  if(!TODAY)TODAY=await api('/api/today');
+  const tm=TODAY.tomorrow;
+  $('#tomorrowInfo').innerHTML=tm?`<b>D${tm.day} ${tm.title}</b><div class="muted">知识点：${tm.kp.join(' · ')}</div>
+    <div class="muted">资源${tm.res.length}条：${tm.res.map(r=>r.src).filter((v,i,a)=>a.indexOf(v)===i).join(' / ')}</div>
+    ${TODAY.tomorrow_fetched?'<div style="color:var(--ok)">今天已抓取过，可重复抓取覆盖。</div>':''}`
+    :'<div class="muted">已是最后一天。</div>';
+  $('#fetchBtn').disabled=!tm;
+  try{const fs=await api('/api/resources');
+    $('#fileList').innerHTML=fs.length?fs.map(f=>`<div class="fileitem"><span>${f.name}</span><span class="muted">${(f.size/1024).toFixed(1)}KB · ${f.mtime}</span></div>`).join(''):'<div class="muted">还没有存档，点上面按钮生成。</div>';
+  }catch(e){$('#fileList').textContent=e.message}
+}
+$('#fetchBtn').onclick=async()=>{
+  const b=$('#fetchBtn');b.disabled=true;b.textContent='抓取中...';
+  try{const r=await post('/api/fetch-next',{});
+    $('#fetchResult').innerHTML=`<div class="muted">已存 resources/${r.file}</div>`+
+      r.items.map(i=>`<div class="res">${i.status===200?'✔':'✖'} <a href="${i.url}" target="_blank">${i.title}</a>
+        <span class="src">HTTP ${i.status} · ${i.chars}字 · ${i.src}</span>${i.error?'<div class="src">'+i.error+'</div>':''}</div>`).join('');
+    renderResource();
+  }catch(e){$('#fetchResult').innerHTML='<div style="color:var(--bad)">'+e.message+'</div>'}
+  b.disabled=false;b.textContent='今天学完 → 确认明天学这个 → 抓取配置';
+};
+
+// ---------- AI老师 ----------
+function sysPrompt(){
+  if(!TODAY||!TODAY.plan_day)return'你是学习台AI老师，中文回答。';
+  const p=TODAY.plan_day;
+  return`你是学习台的AI老师。今天是D${TODAY.day}《${p.title}》，知识点：${p.kp.join('、')}。
+作业【${p.hw.t}】：${p.hw.d}（期望：${p.hw.e}）。
+原则：1)中文，教学优先，引导学生自己写代码而不是直接甩完整答案；2)要代码示例时短小可直接运行；
+3)不编造教材内容，涉及学习资料以学生给的链接为准；4)学生贴代码时先指出问题再给改法。`;
+}
+function renderChat(){
+  $('#chatBox').innerHTML=CHAT.map(m=>`<div class="msg ${m.role==='user'?'me':'ai'}"><div class="who">${m.role==='user'?'我':'AI老师'}</div><div class="bd">${esc(m.content)}</div></div>`).join('');
+  $('#chatBox').scrollTop=1e9;localStorage.setItem('chat',JSON.stringify(CHAT.slice(-40)));
+}
+function esc(s){return(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function clearChat(){CHAT=[];renderChat()}
+async function send(text){
+  if(!text.trim())return;
+  CHAT.push({role:'user',content:text});renderChat();$('#chatIn').value='';
+  const load={role:'assistant',content:'思考中...'};CHAT.push(load);renderChat();
+  try{const r=await post('/api/ai',{messages:CHAT.filter(m=>m!==load).slice(-16),system:sysPrompt(),thinking:$('#aiThink').checked});
+    load.content=r.reply;$('#aiModel').textContent=r.model;
+    $('#aiStat').textContent='本次tokens:'+(r.usage.total_tokens||'?')+' · 累计请教:'+(TODAY?TODAY.stats.ai_calls+1:'?')+'次';
+  }catch(e){load.content='⚠ '+e.message}
+  renderChat();
+}
+function askAI(kind){
+  const p=TODAY&&TODAY.plan_day;
+  if(kind==='explain'&&p)send('请讲解今天的第一个知识点「'+p.kp[0]+'」：先通俗解释，再给一个生活类比，最后出1个小练习让我动手。');
+  else if(kind==='quiz'&&p)send('针对今天知识点'+p.kp.join('、')+'出3道问答题(不要选择题)，我一条条回答，你最后评分并指出薄弱点。');
+  else if(kind==='hw'&&p)send('我的作业是【'+p.hw.t+'】：'+p.hw.d+' 请给我起步思路和拆解步骤(先别给完整答案)。');
+  else if(kind==='review'){$('#chatIn').focus();$('#chatIn').placeholder='把你的作业代码贴进来，AI老师帮你改...';send('我要贴作业代码了，请你逐行检查并给出改进建议。')}
+  go('ai');
+}
+$('#sendBtn').onclick=()=>send($('#chatIn').value);
+$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send($('#chatIn').value)}};
+
+// ---------- 成就 ----------
+async function renderAch(){
+  const cards=(await api('/api/state')).achievements;
+  const got=cards.filter(c=>c.got).length;
+  $('#achSum').textContent=`已解锁 ${got}/${cards.length} · 继续打卡点亮整面墙`;
+  $('#achBox').innerHTML=cards.map(c=>`<div class="ach ${c.got?'got':''}"><b>${c.name}</b><span class="muted">${c.desc}</span>
+    <div class="muted" style="margin-top:6px;color:${c.got?'var(--ok)':'var(--dim)'}">${c.got?'已解锁':'未解锁'}</div></div>`).join('');
+}
+
+// ---------- 启动 ----------
+(async function(){
+  try{
+    PLAN=await api('/api/plan');TODAY=await api('/api/today');
+    renderToday();renderOutline();renderChat();
+  }catch(e){document.body.insertAdjacentHTML('afterbegin','<div class="card" style="margin:12px;color:#ffb3b3">加载失败：'+e.message+'，请确认 app.py 正在运行</div>')}
+})();
+</script>
+</body>
+</html>
