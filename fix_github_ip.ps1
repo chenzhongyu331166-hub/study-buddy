@@ -1,5 +1,5 @@
-# github连通性自愈：github.com:443被掐时，扫描可用IP并写入hosts
-# 用法：右键用PowerShell运行，或 pwsh -File fix_github_ip.ps1
+# github connectivity self-heal: when github.com:443 is blocked, scan working IPs and rewrite hosts
+# usage: powershell -NoProfile -ExecutionPolicy Bypass -File fix_github_ip.ps1
 $hosts = "C:\Windows\System32\drivers\etc\hosts"
 $candidates = @(
     "140.82.114.3", "140.82.113.3", "140.82.116.3", "140.82.121.4",
@@ -13,7 +13,7 @@ foreach ($ip in $candidates) {
     if ($code -eq "200") { $working = $ip; break }
 }
 if (-not $working) {
-    Write-Output "没有可用IP(可能整体断网)，稍后再试"
+    Write-Output "no working IP found (maybe full offline), try later"
     exit 1
 }
 
@@ -22,4 +22,4 @@ $lines += "# github-ip-fallback (auto $(Get-Date -Format 'yyyy-MM-dd HH:mm'))"
 $lines += "$working     github.com"
 Set-Content -Path $hosts -Value $lines -Encoding ASCII
 ipconfig /flushdns | Out-Null
-Write-Output "hosts 已指向 $working"
+Write-Output "hosts now points to $working"
