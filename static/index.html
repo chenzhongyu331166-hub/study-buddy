@@ -28,7 +28,29 @@ main{padding:22px;max-width:1100px;margin:0 auto}
 .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--dim);margin-right:6px}
 .modelsel{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 8px;font-size:12px;color:var(--fg);max-width:340px;cursor:pointer}
 #codeIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;box-sizing:border-box;resize:vertical;line-height:1.45}
-#stdinIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:200px}
+#stdinIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:200px;resize:vertical;line-height:1.45}
+.liverow{display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap;background:#1a2030;border:1px solid #2c3a55;border-radius:8px;padding:8px 10px}
+.liverow.on{display:flex}
+.liverow .lbl{color:var(--acc);font-size:13px;white-space:nowrap}
+#liveIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:180px}
+.liverow .btn{padding:7px 12px;font-size:13px}
+.warnbox{background:#2b2413;border:1px solid #6b551f;color:#f0c96a;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;display:none}
+.warnbox.on{display:block}
+.hintbox{background:#152238;border:1px solid #2a4a7a;color:#9ec5ff;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;display:none}
+.hintbox.on{display:block}
+.hintbox li{margin:4px 0 4px 18px}
+.grayp{color:#98a1b0}
+.dsec{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--panel2)}
+.dsec h4{font-size:14px;color:var(--acc);margin-bottom:6px}
+.dsec .pts{margin:6px 0 6px 18px;color:var(--fg);font-size:13px}
+.dsec .pts li{margin:3px 0}
+.exer{background:#171d2b;border:1px dashed #33507e;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13px}
+.exer summary{cursor:pointer;color:#9ec5ff}
+.exer .starter{font-family:Consolas,monospace;font-size:12px;background:#0f1115;color:#9fe3a8;padding:6px 8px;border-radius:6px;margin-top:6px;white-space:pre-wrap;word-break:break-all}
+.subhist{border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+.subhist .hitem{padding:7px 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);margin-bottom:6px;cursor:pointer;font-size:13px}
+.subhist .hitem:hover{border-color:var(--acc)}
+.fb{white-space:pre-wrap;background:#0f1115;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;font-size:14px;line-height:1.65;display:none}
 .runout{background:#0f1115;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px;min-height:44px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;display:none}
 .task{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
 .task input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px}
@@ -129,14 +151,43 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 
   <div class="card">
     <h2>代码练习区 <span class="tag">真实运行Python · 报错原样显示</span></h2>
-    <div class="muted" style="margin-bottom:8px">把作业写在这里点【运行】——跑的是你电脑上的真Python，语法错误、异常、traceback和真实环境完全一样。草稿按天自动保存，刷新不丢。</div>
+    <div class="muted" style="margin-bottom:8px">写完点【运行】——跑的是你电脑上的真Python，traceback和真实环境完全一样。<b>运行后如果程序还要输入，下面会出现输入行，打字回车直接喂给它(不用重新运行)</b>。草稿按天自动保存，刷新不丢。</div>
     <textarea id="codeIn" rows="13" spellcheck="false" placeholder="# 在这里写今天的作业代码"></textarea>
-    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
       <button class="btn good" id="runBtn">▶ 运行</button>
-      <input id="stdinIn" placeholder="程序输入(给 input() 用的，可多行，留空则阻塞时报错)">
+      <textarea id="stdinIn" rows="2" placeholder="运行前预填输入：每行一个(给 input() 的)。留空也行，运行后在下面的输入行打字回车接着喂。Ctrl+Enter 直接运行"></textarea>
       <button class="btn ghost" id="clearCode">清空</button>
     </div>
+    <div class="warnbox" id="warnBox"></div>
+    <div class="liverow" id="liveRow">
+      <span class="lbl">⌨ 程序在等你输入：</span>
+      <input id="liveIn" placeholder="输入一行，回车发送给程序(Ctrl+Enter也行)">
+      <button class="btn" id="liveSend">发送</button>
+      <button class="btn ghost" id="liveEof">结束输入</button>
+      <button class="btn ghost" id="liveKill" style="border-color:#7a3a3a;color:#ff9d9d">停止</button>
+    </div>
     <pre id="runOut" class="runout"></pre>
+    <div class="hintbox" id="hintBox"></div>
+  </div>
+
+  <div class="card">
+    <h2>今日教程汇总 <span class="tag">AI读完抓取正文替你整理 · 含练习题</span></h2>
+    <div class="muted" style="margin-bottom:8px">不用啃整页原文：AI按知识点分节讲清楚+要点+练习题，练习题可一键载入练习区。有疑问点每节的【问这个知识点】直达AI老师。</div>
+    <div id="digestBox" class="loading">检查中...</div>
+  </div>
+
+  <div class="card">
+    <h2>作业提交区 <span class="tag">直通AI老师 · 深度批改</span></h2>
+    <div class="muted" style="margin-bottom:8px">把作业代码贴进来(或从练习区带入)，AI老师按今天的作业要求逐项批改：完成度/问题/改法/得分。批改记录自动存档可回看。</div>
+    <textarea id="subIn" rows="9" spellcheck="false" placeholder="把写好的作业代码贴在这里..."></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="subBtn">交给AI老师批改</button>
+      <button class="btn ghost" id="subFromRun">从练习区带入</button>
+      <label class="muted"><input type="checkbox" id="subThink" checked> 深度思考(慢而准)</label>
+      <button class="btn good" id="subMark" style="display:none">✔ 批改没大问题，标记作业完成</button>
+    </div>
+    <div class="fb" id="subFb"></div>
+    <div class="subhist" id="subHist"></div>
   </div>
 </section>
 
@@ -215,7 +266,9 @@ function renderToday(){
   $('#todayHead').innerHTML=`<h2>D${t.day} ${pd?pd.title:'计划外日期(不在84天内)'}</h2>
     <div>${pd?`<span class="tag">${st?st.range+' '+st.name:''}</span><span class="tag">阶段目标：${st?st.goal:''}</span>`:''}</div>
     <div class="muted" style="margin-top:6px">完成任务打勾即可关掉右下角提醒；作业完成也打勾。</div>`;
-  if(!pd){$('#taskList').innerHTML='<div class="muted">今天不在计划里，休息或补进度。</div>';return}
+  if(!pd){$('#taskList').innerHTML='<div class="muted">今天不在计划里，休息或补进度。</div>';
+    $('#digestBox').innerHTML='<div class="muted">今天不在计划内，无汇总。</div>';
+    $('#subHist').innerHTML='';return}
   $('#taskList').innerHTML=pd.tasks.map((x,i)=>`
     <label class="task ${t.entry.tasks[i]?'done':''}">
       <input type="checkbox" data-i="${i}" ${t.entry.tasks[i]?'checked':''}>
@@ -245,31 +298,209 @@ function renderToday(){
   $('#stdinIn').value = localStorage.getItem(ck+'stdin')||'';
   $('#runOut').style.display='none';
   $('#kpList').innerHTML=pd.kp.map(k=>`<div class="res">· ${k}</div>`).join('');
-  const resHtml=pd.res.map((r,i)=>`<div class="res"><a href="${r.u}" target="_blank">${i+1}. ${r.t}</a><div class="src">来源：${r.src}</div></div>`).join('');
+  const resHtml=pd.res.map((r,i)=>{
+    const dup=(r.dup_days&&r.dup_days.length)?`<span class="tag" title="同一链接还出现在这些天">也出现于 ${r.dup_days.map(d=>'D'+d).join('、')}</span>`:'';
+    return `<div class="res"><a href="${r.u}" target="_blank">${i+1}. ${r.t}</a>${dup?' '+dup:''}<div class="src">来源：${r.src}${(r.dup_days&&r.dup_days.length)?' · 重复资源可略读，看下面教程汇总即可':''}</div></div>`}).join('');
   $('#resList').innerHTML=resHtml;$('#resList2').innerHTML=resHtml;
+  loadDigest();
+  loadSubs();
 }
 $('#saveNote').onclick=async()=>{try{await post('/api/checkin',{hw_note:$('#hwNote').value});toast('笔记已保存')}catch(e){alert(e.message)}};
 
-// ---------- 代码练习(真实运行) ----------
+// ---------- 代码练习(会话式真实运行，可边跑边喂输入) ----------
 const ckNow=()=> 'codeD'+(TODAY?TODAY.day:'x');
 $('#codeIn').oninput=()=>localStorage.setItem(ckNow(),$('#codeIn').value);
 $('#stdinIn').oninput=()=>localStorage.setItem(ckNow()+'stdin',$('#stdinIn').value);
 $('#clearCode').onclick=()=>{$('#codeIn').value='';localStorage.removeItem(ckNow());$('#runOut').style.display='none'};
-$('#runBtn').onclick=async()=>{
-  const b=$('#runBtn');b.disabled=true;b.textContent='运行中...';
-  try{
-    const r=await post('/api/run',{code:$('#codeIn').value,stdin:$('#stdinIn').value});
-    const o=$('#runOut');o.style.display='block';
-    let h='';
-    if(r.stdout)h+=`<span style="color:#9fe3a8">${esc(r.stdout)}</span>`;
-    if(r.stderr)h+=(r.stdout?'\n':'')+`<span style="color:#ff7b72">${esc(r.stderr)}</span>`;
-    if(r.exit!==0)h+=`\n<span style="color:#e0a63c">[退出码 ${r.exit}${r.timeout?' · 超时已强制结束(多半是死循环)':''}]</span>`;
-    o.innerHTML=h||'<span style="color:#98a1b0">(运行完成，无输出)</span>';
-    o.scrollTop=o.scrollHeight;
-  }catch(e){
-    const o=$('#runOut');o.style.display='block';o.innerHTML=`<span style="color:#ff7b72">${esc(e.message)}</span>`;
+
+let RUN_SID=null, RUN_TIMER=null, RUN_LAST='';
+function showRunChunks(chunks,hints){
+  const o=$('#runOut');o.style.display='block';
+  let h='';
+  for(const c of chunks){
+    const col=c.s==='err'?'#ff7b72':'#9fe3a8';
+    h+=`<span style="color:${col}">${ansiGray(esc(c.t))}</span>`;
   }
-  b.disabled=false;b.textContent='▶ 运行';
+  o.innerHTML=h||'<span style="color:#98a1b0">(运行中，暂无输出)</span>';
+  o.scrollTop=o.scrollHeight;
+  const hb=$('#hintBox');
+  if(hints&&hints.length){hb.classList.add('on');hb.innerHTML='<b>看不懂这个报错？</b><ul>'+hints.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'}
+  else hb.classList.remove('on');
+}
+function ansiGray(s){return s.replace(/\x1b\[90m/g,'<span class="grayp">').replace(/\x1b\[0m/g,'</span>').replace(/\x1b\[[0-9;]*m/g,'')}
+
+function stopRunPoll(){if(RUN_TIMER){clearInterval(RUN_TIMER);RUN_TIMER=null}}
+async function startRun(){
+  const code=$('#codeIn').value;
+  if(!code.trim()){alert('代码是空的');return}
+  const b=$('#runBtn');b.disabled=true;b.textContent='运行中...';
+  // 上一个会话还挂着：先杀掉
+  if(RUN_SID){try{await post('/api/run/'+RUN_SID+'/kill',{})}catch(e){}}
+  stopRunPoll();RUN_LAST='';
+  $('#hintBox').classList.remove('on');
+  const wb=$('#warnBox');wb.classList.remove('on');
+  try{
+    const r=await post('/api/run',{code,stdin:$('#stdinIn').value});
+    RUN_SID=r.sid;
+    if(r.warnings&&r.warnings.length){wb.classList.add('on');wb.innerHTML='<b>⚠ 运行前提醒：</b><br>'+r.warnings.map(x=>'· '+esc(x)).join('<br>')}
+    if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
+    $('#runOut').style.display='block';
+    $('#runOut').innerHTML='<span style="color:#98a1b0">启动中...</span>';
+    $('#liveRow').classList.add('on');
+    $('#liveIn').focus();
+    RUN_TIMER=setInterval(pollRun,250);
+  }catch(e){
+    $('#runOut').style.display='block';
+    $('#runOut').innerHTML=`<span style="color:#ff7b72">${esc(e.message)}</span>`;
+    b.disabled=false;b.textContent='▶ 运行';
+  }
+}
+async function pollRun(){
+  if(!RUN_SID)return;
+  try{
+    const r=await api('/api/run/'+RUN_SID);
+    const key=JSON.stringify(r.chunks);
+    if(key!==RUN_LAST||!r.running){RUN_LAST=key;showRunChunks(r.chunks,r.hints)}
+    if(!r.running){
+      stopRunPoll();
+      const o=$('#runOut');
+      if(r.exit!==0&&r.exit!==null)o.innerHTML+=`\n<span style="color:#e0a63c">[退出码 ${r.exit}${r.capped?' · 输出超限已截断':''}]</span>`;
+      $('#liveRow').classList.remove('on');
+      $('#runBtn').disabled=false;$('#runBtn').textContent='▶ 运行';
+      RUN_SID=null;
+    }
+  }catch(e){
+    // 会话过期/服务重启：收尾，别无限转
+    stopRunPoll();
+    if(RUN_SID){$('#runOut').style.display='block';$('#runOut').innerHTML+=`\n<span style="color:#e0a63c">[${esc(e.message)}]</span>`}
+    $('#liveRow').classList.remove('on');
+    $('#runBtn').disabled=false;$('#runBtn').textContent='▶ 运行';
+    RUN_SID=null;
+  }
+}
+$('#runBtn').onclick=startRun;
+$('#codeIn').onkeydown=e=>{if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();startRun()}};
+async function sendLive(){
+  if(!RUN_SID)return;
+  const v=$('#liveIn').value;
+  try{
+    await post('/api/run/'+RUN_SID+'/input',{line:v});
+    $('#liveIn').value='';$('#liveIn').focus();
+    pollRun();
+  }catch(e){toast('喂不进去：'+esc(e.message))}
+}
+$('#liveSend').onclick=sendLive;
+$('#liveIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sendLive()}};
+$('#liveEof').onclick=async()=>{if(!RUN_SID)return;try{await post('/api/run/'+RUN_SID+'/eof',{});toast('已告诉程序：没有更多输入了')}catch(e){toast(e.message)}};
+$('#liveKill').onclick=async()=>{if(!RUN_SID)return;try{await post('/api/run/'+RUN_SID+'/kill',{});pollRun()}catch(e){toast(e.message)}};
+
+// ---------- 今日教程汇总(AI读抓取正文) ----------
+let DIGEST=null;
+async function loadDigest(){
+  const box=$('#digestBox');
+  if(!TODAY||!TODAY.plan_day){box.innerHTML='<div class="muted">今天不在计划内。</div>';return}
+  try{
+    const r=await api('/api/digest?date='+TODAY.date);
+    if(r.sections&&r.sections.length){renderDigest(r);return}
+    box.innerHTML=`<div class="muted">还没有生成。AI会读取今天已抓取的教材正文(${TODAY.plan_day.res.length}份资料)，按知识点整理成讲解+要点+练习题(免费魔搭模型，约需半分钟)。</div>
+      <div style="margin-top:10px"><button class="btn" id="dgBtn">✨ 生成今日教程汇总</button></div>`;
+    $('#dgBtn').onclick=genDigest;
+  }catch(e){box.innerHTML='<div style="color:var(--bad)">'+esc(e.message)+'</div>'}
+}
+async function genDigest(){
+  const box=$('#digestBox');const b=$('#dgBtn');
+  if(b){b.disabled=true;b.textContent='AI读资料中...约半分钟'}
+  box.innerHTML='<div class="loading">AI 正在读取今天抓取的教材正文，按知识点整理中...(约半分钟)</div>';
+  try{
+    const r=await post('/api/digest',{date:TODAY.date});
+    renderDigest(r);
+    if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
+  }catch(e){box.innerHTML='<div style="color:var(--bad)">'+esc(e.message)+'</div><div style="margin-top:8px"><button class="btn" onclick="genDigest()">重试</button></div>'}
+}
+function renderDigest(r){
+  DIGEST=r;
+  const box=$('#digestBox');
+  box.innerHTML=(r.note?`<div class="muted" style="margin-bottom:8px">💡 ${esc(r.note)}</div>`:'')
+    +r.sections.map((s,i)=>`
+    <div class="dsec">
+      <h4>${i+1}. ${esc(s.kp)}</h4>
+      <div>${esc(s.summary)}</div>
+      <ul class="pts">${(s.points||[]).map(p=>'<li>'+esc(p)+'</li>').join('')}</ul>
+      ${(s.exercises||[]).map((ex,j)=>`
+        <div class="exer">
+          <details><summary>练习${j+1}：${esc(ex.q)}</summary>
+            <div style="margin-top:6px"><b>参考答案：</b>${esc(ex.a||'')}</div>
+            ${ex.starter?`<div class="starter">${esc(ex.starter)}</div>
+              <div style="margin-top:6px"><button class="btn ghost" onclick="loadStarter(${i},${j})">载入练习区</button></div>`:''}
+          </details>
+        </div>`).join('')}
+      <div style="margin-top:8px"><button class="btn ghost" onclick="askKp(${i})">问这个知识点 →</button></div>
+    </div>`).join('')
+    +(r._meta?`<div class="muted">来源：${esc(r._meta.source_file||'')} · ${esc(r._meta.generated||'')}</div>`:'');
+  const again=document.createElement('div');
+  again.style.marginTop='10px';
+  again.innerHTML='<button class="btn ghost" id="dgAgain">重新生成</button>';
+  box.appendChild(again);
+  $('#dgAgain').onclick=()=>genDigest();
+}
+function loadStarter(i,j){
+  const st=DIGEST&&DIGEST.sections[i]&&DIGEST.sections[i].exercises[j]?DIGEST.sections[i].exercises[j].starter:'';
+  if(!st)return;
+  $('#codeIn').value=st+'\n';localStorage.setItem(ckNow(),$('#codeIn').value);
+  $('#codeIn').scrollIntoView({behavior:'smooth'});$('#codeIn').focus();
+  toast('练习题已载入练习区，改一改点【运行】');
+}
+function askKp(i){
+  const s=DIGEST&&DIGEST.sections[i];if(!s)return;
+  go('ai');
+  $('#chatIn').value=`关于知识点「${s.kp}」我想弄明白：${s.summary}\n我的疑问是：`;
+  $('#chatIn').focus();
+  $('#chatIn').setSelectionRange(0,0);
+}
+
+// ---------- 作业提交区(AI深度批改+存档) ----------
+async function loadSubs(){
+  const box=$('#subHist');
+  try{
+    const r=await api('/api/hw/submissions');
+    const all=[];
+    for(const [date,list] of Object.entries(r.subs||{})){
+      (list||[]).forEach(x=>all.push({date,...x}));
+    }
+    all.sort((a,b)=>a.t<b.t?1:-1);
+    if(!all.length){box.innerHTML='<div class="muted">还没有提交记录。写完作业点上面【交给AI老师批改】。</div>';return}
+    box.innerHTML='<div class="muted" style="margin-bottom:6px">批改记录(点开回看)：</div>'+
+      all.slice(0,20).map((x,i)=>`<div class="hitem" data-i="${i}">D${x.day} · ${esc(x.t.replace('T',' '))} · ${esc((x.code||'').replace(/\s+/g,' ').slice(0,60))}...</div>`).join('');
+    box._all=all;
+    $$('#subHist .hitem').forEach(el=>el.onclick=()=>{
+      const x=box._all[+el.dataset.i];
+      const fb=$('#subFb');fb.style.display='block';
+      fb.textContent='【'+x.t+' D'+x.day+' 批改记录】\n\n'+x.feedback;
+      fb.scrollIntoView({behavior:'smooth'});
+    });
+  }catch(e){box.innerHTML='<div class="muted">'+esc(e.message)+'</div>'}
+}
+$('#subFromRun').onclick=()=>{$('#subIn').value=$('#codeIn').value;toast('已从练习区带入代码')};
+$('#subBtn').onclick=async()=>{
+  const code=$('#subIn').value;
+  if(!code.trim()){alert('还没有代码可提交');return}
+  const b=$('#subBtn');b.disabled=true;b.textContent='AI批改中(深度思考)...约1分钟';
+  const fb=$('#subFb');fb.style.display='block';fb.textContent='AI老师正在批改，请稍候...';
+  $('#subMark').style.display='none';
+  try{
+    const r=await post('/api/hw/submit',{code,thinking:$('#subThink').checked});
+    fb.textContent=r.feedback;
+    if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
+    $('#subMark').style.display='';
+    loadSubs();
+  }catch(e){fb.textContent='⚠ '+e.message}
+  b.disabled=false;b.textContent='交给AI老师批改';
+};
+$('#subMark').onclick=async()=>{
+  try{const r=await post('/api/checkin',{hw:true});
+    if(r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
+    TODAY.entry=r.entry;TODAY.stats=r.stats;_stateCache=null;renderToday();
+  }catch(e){alert(e.message)}
 };
 
 // ---------- 大纲 ----------
@@ -320,6 +551,7 @@ async function renderProgress(){
     ['连续天数',st.streak,'任务全完成的连续天数'],
     ['编程作业',st.hw_done,'次'],['全勤天数',st.full_days,'任务+作业都完成'],
     ['AI请教',st.ai_calls,'次'],['已抓资源',st.fetched_days,'天'],
+    ['运行代码',st.runs,'次'],['AI批改',st.subs,'份'],['教程汇总',st.digests,'天'],
   ].map(x=>`<div class="stat"><div class="v">${x[1]}</div><div class="k">${x[0]}</div><div class="k">${x[2]||''}</div></div>`).join('');
   $('#stageBars').innerHTML=PLAN.stages.map(s2=>`
     <div><span class="muted">阶段${s2.stage} ${s2.name}(${s2.range}) ${st.stage_pct[s2.stage]||0}%</span>
@@ -402,8 +634,10 @@ async function send(text){
 }
 function askAI(kind){
   const p=TODAY&&TODAY.plan_day;
-  if(kind==='explain'&&p)send('请讲解今天的第一个知识点「'+p.kp[0]+'」：先通俗解释，再给一个生活类比，最后出1个小练习让我动手。');
-  else if(kind==='quiz'&&p)send('针对今天知识点'+p.kp.join('、')+'出3道问答题(不要选择题)，我一条条回答，你最后评分并指出薄弱点。');
+  const dg=DIGEST&&DIGEST.sections&&DIGEST.sections.length
+    ?'\n今天的教程汇总要点(出题必须基于这些和抓取正文，不要超纲)：\n'+DIGEST.sections.map(s=>'· '+s.kp+'：'+(s.points||[]).join('；')).join('\n'):'';
+  if(kind==='explain'&&p)send('请讲解今天的第一个知识点「'+p.kp[0]+'」：先通俗解释，再给一个生活类比，最后出1个小练习让我动手。'+dg);
+  else if(kind==='quiz'&&p)send('针对今天知识点'+p.kp.join('、')+'出3道问答题(不要选择题)，我一条条回答，你最后评分并指出薄弱点。'+dg);
   else if(kind==='hw'&&p)send('我的作业是【'+p.hw.t+'】：'+p.hw.d+' 请给我起步思路和拆解步骤(先别给完整答案)。');
   else if(kind==='review'){$('#chatIn').focus();$('#chatIn').placeholder='把你的作业代码贴进来，AI老师帮你改...';send('我要贴作业代码了，请你逐行检查并给出改进建议。')}
   go('ai');

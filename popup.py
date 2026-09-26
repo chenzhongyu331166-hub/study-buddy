@@ -16,6 +16,7 @@ import tkinter as tk
 ROOT = Path(__file__).resolve().parent
 PLAN_PATH = ROOT / "plan.json"
 STATE_PATH = ROOT / "data" / "state.json"
+MARKER_PATH = ROOT / "data" / "popup_marker.json"
 SITE = "http://127.0.0.1:5000"
 
 BG = "#171a21"
@@ -23,6 +24,44 @@ FG = "#e6e9ef"
 DIM = "#98a1b0"
 OK = "#39c07a"
 ACC = "#4f8cff"
+
+_MUTEX_HANDLE = None
+
+
+def _single_instance_ok():
+    """Windows命名互斥量：已有弹窗在跑就退出(防登录+定时同时弹两个)"""
+    global _MUTEX_HANDLE
+    try:
+        import ctypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        ctypes.set_last_error(0)
+        handle = k32.CreateMutexW(None, False, "StudyBuddyPopupMutex")
+        if handle and ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
+            try:
+                k32.CloseHandle(handle)
+            except Exception:
+                pass
+            return False
+        _MUTEX_HANDLE = handle  # 持有句柄直到进程退出，锁才不丢
+        return True
+    except Exception:
+        return True
+
+
+def _shown_today():
+    """当天已经自动弹过没有(一天只自动弹一次)"""
+    try:
+        m = json.load(open(MARKER_PATH, "r", encoding="utf-8"))
+        return m.get("date") == datetime.date.today().isoformat()
+    except Exception:
+        return False
+
+
+def _mark_shown():
+    try:
+        save_json(MARKER_PATH, {"date": datetime.date.today().isoformat()})
+    except Exception:
+        pass
 
 
 def load_json(p, default):
@@ -265,12 +304,17 @@ class Reminder:
 def main():
     auto = "--auto" in sys.argv
     try:
+        if not _single_instance_ok():
+            return  # 已有一个弹窗在屏上，别再叠一个
+        if auto and _shown_today():
+            return  # 今天已经自动弹过一次了(登录弹过就不再弹19:00那场)
         pop = Reminder()
         if auto:
             # 定时/开机自动弹：已完成或不在计划内就静默退出
             if pop.all_done():
                 pop.root.destroy()
                 return
+            _mark_shown()
         pop.run()
     except Exception as e:
         print("popup error:", e)
