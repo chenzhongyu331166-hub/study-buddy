@@ -197,13 +197,32 @@ class Reminder:
     # ---------- 行为 ----------
     def place_bottom_right(self):
         self.root.update_idletasks()
-        w = self.root.winfo_width() or 380
-        h = self.root.winfo_height() or 340
-        sw = self.root.winfo_screenwidth()
-        sh = self.root.winfo_screenheight()
-        x = sw - w - 24
-        y = sh - h - 64
-        self.root.geometry(f"+{max(x,0)}+{max(y,0)}")
+        self.root.update()
+        try:
+            # 工作区(不含任务栏) + 外框补偿：Tk自测的尺寸不含标题栏，需+40才能算准底边
+            import ctypes
+            from ctypes import wintypes
+            u = ctypes.WinDLL("user32")
+            u.SystemParametersInfoW.argtypes = [wintypes.UINT, wintypes.UINT,
+                                                ctypes.c_void_p, wintypes.UINT]
+            u.SystemParametersInfoW.restype = wintypes.BOOL
+            ww, wh = self.root.winfo_width(), self.root.winfo_height()
+            wa = wintypes.RECT()
+            ok = u.SystemParametersInfoW(0x0030, 0, ctypes.byref(wa), 0)  # SPI_GETWORKAREA
+            sw, sh = u.GetSystemMetrics(0), u.GetSystemMetrics(1)
+            limit = wa.bottom if (ok and wa.bottom > 0) else sh
+            FRAME_H = 40   # 标题栏+下边框(实测451=412+39)
+            FRAME_W = 16   # 左右边框(实测390=374+16)
+            x = sw - ww - FRAME_W - 8
+            y = limit - (wh + FRAME_H) - 10
+            self.root.geometry(f"+{max(x, 0)}+{max(y, 0)}")
+        except Exception:
+            w = self.root.winfo_width() or 380
+            h = self.root.winfo_height() or 340
+            sw = self.root.winfo_screenwidth()
+            sh = self.root.winfo_screenheight()
+            self.root.geometry(f"+{max(sw - w - 40, 0)}+{max(sh - h - 90, 0)}")
+        self.root.update_idletasks()
 
     def on_close(self):
         if self.all_done():

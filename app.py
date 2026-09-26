@@ -8,6 +8,9 @@ import re
 import datetime
 import threading
 import time
+import sys
+import subprocess
+import uuid
 import traceback
 from pathlib import Path
 
@@ -362,6 +365,48 @@ def api_ai():
         ]
         save_state(st)
     return jsonify({"reply": reply, "usage": usage, "model": current_model()})
+
+
+@app.route("/api/run", methods=["POST"])
+def api_run():
+    """代码练习：用本机Python真实运行，stdout/traceback原样返回，让报错可见"""
+    body = request.get_json(force=True, silent=True) or {}
+    code = body.get("code") or ""
+    stdin = body.get("stdin") or ""
+    if not code.strip():
+        return jsonify({"error": "代码是空的"}), 400
+    if len(code) > 20000:
+        return jsonify({"error": "代码太长(上限2万字符)"}), 400
+    if len(stdin) > 10000:
+        return jsonify({"error": "输入太长"}), 400
+    run_dir = ROOT / "data" / "run"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    f = run_dir / f"s_{os.getpid()}_{uuid.uuid4().hex[:8]}.py"
+    try:
+        f.write_text(code, encoding="utf-8")
+        try:
+            p = subprocess.run(
+                [sys.executable, "-X", "utf8", str(f)],
+                input=stdin.encode("utf-8"),
+                capture_output=True, timeout=10, cwd=str(run_dir),
+                env={**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"})
+            out, err, rc, timed = p.stdout, p.stderr, p.returncode, False
+        except subprocess.TimeoutExpired as e:
+            out, err = e.stdout or b"", (e.stderr or b"")
+            err += "\n[运行超过10秒，已强制结束——多半是死循环]".encode("utf-8", "replace")
+            rc, timed = -1, True
+        return jsonify({
+            "stdout": out.decode("utf-8", "replace"),
+            "stderr": err.decode("utf-8", "replace"),
+            "exit": rc, "timeout": timed,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        try:
+            f.unlink()
+        except Exception:
+            pass
 
 
 @app.route("/api/models")

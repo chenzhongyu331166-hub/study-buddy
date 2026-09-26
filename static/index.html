@@ -27,6 +27,9 @@ main{padding:22px;max-width:1100px;margin:0 auto}
 .muted{color:var(--dim);font-size:13px}
 .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--dim);margin-right:6px}
 .modelsel{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 8px;font-size:12px;color:var(--fg);max-width:340px;cursor:pointer}
+#codeIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;box-sizing:border-box;resize:vertical;line-height:1.45}
+#stdinIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:200px}
+.runout{background:#0f1115;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px;min-height:44px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;display:none}
 .task{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
 .task input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px}
 .task.done{opacity:.55}
@@ -122,6 +125,18 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
         <button class="btn ghost" onclick="go('resource')">去看明天的资源</button>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>代码练习区 <span class="tag">真实运行Python · 报错原样显示</span></h2>
+    <div class="muted" style="margin-bottom:8px">把作业写在这里点【运行】——跑的是你电脑上的真Python，语法错误、异常、traceback和真实环境完全一样。草稿按天自动保存，刷新不丢。</div>
+    <textarea id="codeIn" rows="13" spellcheck="false" placeholder="# 在这里写今天的作业代码"></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn good" id="runBtn">▶ 运行</button>
+      <input id="stdinIn" placeholder="程序输入(给 input() 用的，可多行，留空则阻塞时报错)">
+      <button class="btn ghost" id="clearCode">清空</button>
+    </div>
+    <pre id="runOut" class="runout"></pre>
   </div>
 </section>
 
@@ -223,11 +238,39 @@ function renderToday(){
     }catch(err){alert(err.message)}
   };
   $('#hwNote').value=t.entry.hw_note||'';
+  const ck='codeD'+t.day;
+  const draft=localStorage.getItem(ck);
+  $('#codeIn').value = draft!==null ? draft
+    : `# D${t.day} 作业：${pd.hw.t}\n# 要求：${pd.hw.d}\n# 写完点下面【运行】，报错会原样显示在下方\n\n`;
+  $('#stdinIn').value = localStorage.getItem(ck+'stdin')||'';
+  $('#runOut').style.display='none';
   $('#kpList').innerHTML=pd.kp.map(k=>`<div class="res">· ${k}</div>`).join('');
   const resHtml=pd.res.map((r,i)=>`<div class="res"><a href="${r.u}" target="_blank">${i+1}. ${r.t}</a><div class="src">来源：${r.src}</div></div>`).join('');
   $('#resList').innerHTML=resHtml;$('#resList2').innerHTML=resHtml;
 }
 $('#saveNote').onclick=async()=>{try{await post('/api/checkin',{hw_note:$('#hwNote').value});toast('笔记已保存')}catch(e){alert(e.message)}};
+
+// ---------- 代码练习(真实运行) ----------
+const ckNow=()=> 'codeD'+(TODAY?TODAY.day:'x');
+$('#codeIn').oninput=()=>localStorage.setItem(ckNow(),$('#codeIn').value);
+$('#stdinIn').oninput=()=>localStorage.setItem(ckNow()+'stdin',$('#stdinIn').value);
+$('#clearCode').onclick=()=>{$('#codeIn').value='';localStorage.removeItem(ckNow());$('#runOut').style.display='none'};
+$('#runBtn').onclick=async()=>{
+  const b=$('#runBtn');b.disabled=true;b.textContent='运行中...';
+  try{
+    const r=await post('/api/run',{code:$('#codeIn').value,stdin:$('#stdinIn').value});
+    const o=$('#runOut');o.style.display='block';
+    let h='';
+    if(r.stdout)h+=`<span style="color:#9fe3a8">${esc(r.stdout)}</span>`;
+    if(r.stderr)h+=(r.stdout?'\n':'')+`<span style="color:#ff7b72">${esc(r.stderr)}</span>`;
+    if(r.exit!==0)h+=`\n<span style="color:#e0a63c">[退出码 ${r.exit}${r.timeout?' · 超时已强制结束(多半是死循环)':''}]</span>`;
+    o.innerHTML=h||'<span style="color:#98a1b0">(运行完成，无输出)</span>';
+    o.scrollTop=o.scrollHeight;
+  }catch(e){
+    const o=$('#runOut');o.style.display='block';o.innerHTML=`<span style="color:#ff7b72">${esc(e.message)}</span>`;
+  }
+  b.disabled=false;b.textContent='▶ 运行';
+};
 
 // ---------- 大纲 ----------
 function renderOutline(){
