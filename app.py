@@ -79,6 +79,14 @@ def day_index(date_str):
     return n if 1 <= n <= TOTAL else None
 
 
+def study_today():
+    """学习日：早上7点前仍算前一天(凌晨写作业不跳天)"""
+    d = datetime.date.today()
+    if datetime.datetime.now().hour < 7:
+        d -= datetime.timedelta(days=1)
+    return d
+
+
 def get_state():
     return load_json(STATE_PATH, {"checkins": {}, "ai": {"count": 0, "log": []}, "fetch": {}})
 
@@ -116,7 +124,7 @@ def compute_stats(st):
         return bool(e) and all(e.get("tasks", []))
 
     streak = 0
-    d = datetime.date.today()
+    d = study_today()
     if not _day_ok(d):
         d -= datetime.timedelta(days=1)
     while _day_ok(d):
@@ -232,7 +240,13 @@ def api_state():
 @app.route("/api/today")
 def api_today():
     st = get_state()
-    now = datetime.date.today().isoformat()
+    arg = (request.args.get("date") or "").strip()
+    if arg:
+        if day_index(arg) is None:
+            return jsonify({"error": "日期不在84天计划内"}), 400
+        now = arg
+    else:
+        now = study_today().isoformat()
     n = day_index(now)
     entry = day_entry(st, now)
     stats = compute_stats(st)
@@ -268,7 +282,7 @@ def api_today():
 @app.route("/api/checkin", methods=["POST"])
 def api_checkin():
     body = request.get_json(force=True, silent=True) or {}
-    date_str = body.get("date") or datetime.date.today().isoformat()
+    date_str = body.get("date") or study_today().isoformat()
     if day_index(date_str) is None:
         return jsonify({"error": "日期不在84天计划内"}), 400
     st = get_state()
@@ -856,11 +870,11 @@ def api_hw_submit():
         return jsonify({"error": "还没有代码可提交"}), 400
     if len(code) > 8000:
         return jsonify({"error": "代码太长(上限8000字符)，先精简或分段提交"}), 400
-    now = datetime.date.today()
-    n = day_index(now.isoformat())
+    date_str = str(body.get("date") or "").strip() or study_today().isoformat()
+    n = day_index(date_str)
     pd = DAYS.get(n)
     if not pd:
-        return jsonify({"error": "今天不在84天计划内，找不到要批改的作业"}), 400
+        return jsonify({"error": "所选日期不在84天计划内，找不到要批改的作业"}), 400
     system = (
         f"你是学习台的AI老师，正在批改学生D{n}《{pd['title']}》的课后编程作业。"
         f"作业要求【{pd['hw']['t']}】：{pd['hw']['d']}（期望：{pd['hw']['e']}）。\n"
@@ -886,7 +900,7 @@ def api_hw_submit():
         st = get_state()
         before = set(earned(st, compute_stats(st)))
         subs = st.setdefault("subs", {})
-        day_list = subs.setdefault(now.isoformat(), [])
+        day_list = subs.setdefault(date_str, [])
         day_list.append({
             "t": datetime.datetime.now().isoformat(timespec="seconds"),
             "day": n, "code": code, "feedback": reply,
@@ -953,7 +967,7 @@ def _digest_path(date_str):
 @app.route("/api/digest", methods=["POST"])
 def api_digest_generate():
     body = request.get_json(force=True, silent=True) or {}
-    date_str = body.get("date") or datetime.date.today().isoformat()
+    date_str = body.get("date") or study_today().isoformat()
     force = bool(body.get("force"))
     n = day_index(date_str)
     if n is None:
@@ -1024,7 +1038,7 @@ def api_digest_generate():
 
 @app.route("/api/digest")
 def api_digest_get():
-    date_str = request.args.get("date") or datetime.date.today().isoformat()
+    date_str = request.args.get("date") or study_today().isoformat()
     cpath = _digest_path(date_str)
     if not cpath.exists():
         return jsonify({"cached": False, "sections": []})
@@ -1112,7 +1126,7 @@ def do_fetch(n, date_str):
 
 def _auto_fetch_once():
     """明天(或下一个还没抓的计划日)的资料没备好就自动抓。"""
-    today = datetime.date.today()
+    today = study_today()
     target = None
     for off in range(1, 6):   # 未来5天里第一个在计划内且没抓过的
         d = today + datetime.timedelta(days=off)
@@ -1152,8 +1166,8 @@ def api_fetch_next():
         date_str = body["date"]
         n = day_index(date_str)
     else:
-        n = day_index(datetime.date.today().isoformat()) + 1
-        date_str = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+        n = (day_index(study_today().isoformat()) or 0) + 1
+        date_str = (study_today() + datetime.timedelta(days=1)).isoformat()
     if n is None or n > TOTAL:
         return jsonify({"error": "没有更晚的计划日了(已到D84)"}), 400
     if not _FETCH_LOCK.acquire(blocking=False):

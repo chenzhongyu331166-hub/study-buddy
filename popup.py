@@ -48,18 +48,26 @@ def _single_instance_ok():
         return True
 
 
+def _study_today():
+    """学习日：早上7点前仍算前一天(与app.py保持一致)"""
+    d = datetime.date.today()
+    if datetime.datetime.now().hour < 7:
+        d -= datetime.timedelta(days=1)
+    return d
+
+
 def _shown_today():
     """当天已经自动弹过没有(一天只自动弹一次)"""
     try:
         m = json.load(open(MARKER_PATH, "r", encoding="utf-8"))
-        return m.get("date") == datetime.date.today().isoformat()
+        return m.get("date") == _study_today().isoformat()
     except Exception:
         return False
 
 
 def _mark_shown():
     try:
-        save_json(MARKER_PATH, {"date": datetime.date.today().isoformat()})
+        save_json(MARKER_PATH, {"date": _study_today().isoformat()})
     except Exception:
         pass
 
@@ -100,7 +108,7 @@ def day_index(plan, date_str):
 class Reminder:
     def __init__(self):
         self.plan = load_json(PLAN_PATH, None)
-        self.today = datetime.date.today().isoformat()
+        self.today = _study_today().isoformat()
         self.n = day_index(self.plan, self.today) if self.plan else None
         self.pd = None
         if self.n:
