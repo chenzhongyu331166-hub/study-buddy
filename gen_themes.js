@@ -21,19 +21,23 @@ const mix = (a, b, p) => a.map((v, i) => v + (b[i] - v) * p);
 const DARK = hx('#0b0d10'), WHITE = hx('#ffffff');
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
-// ---------- palettes (hex from official sources) ----------
-// Catppuccin Mocha / Nord(dev) / Everforest Dark / Catppuccin Macchiato /
-// Catppuccin Frappe / GitHub Primer Dark / Gruvbox Dark / Dracula / Solarized-warm light
+// ---------- palettes + strongly tinted surfaces ----------
+// Accents/semantic colors from official palettes (Catppuccin Mocha/Macchiato/Frappe,
+// Nord, Everforest, GitHub Primer Dark, Gruvbox, Dracula, Solarized).
+// SURFACES (bg/panel/panel2/line) are deliberately pushed hard toward each theme's
+// hue (hand-tinted, low luminance) so skins read as clearly COLORED, not gray.
+// Dark-surface semantic colors are pre-baked light enough to pass 4.5:1 so the
+// engine never gray-washes them. bg2 = full-page radial glow + header gradient.
 const SPECS = {
-  root: { label: 'default Mocha', bg: '#181825', panel: '#1e1e2e', panel2: '#313244', line: '#45475a', fg: '#cdd6f4', dim: '#a6adc8', acc: '#89b4fa', acc2: '#cba6f7', btnFg: '#11111b', ok: '#a6e3a1', warn: '#f9e2af', bad: '#f38ba8', h2a: '#ff8a3c', h2b: '#e8355a', codeBg: '#11111b', glowA: 0.38 },
-  deepblue: { label: 'Nord', bg: '#2e3440', panel: '#353b49', panel2: '#3b4252', line: '#4c566a', fg: '#d8dee9', dim: '#9aa5b5', acc: '#88c0d0', acc2: '#81a1c1', btnFg: '#2e3440', ok: '#a3be8c', warn: '#ebcb8b', bad: '#bf616a', h2a: '#8fbcbb', h2b: '#88c0d0', glowA: 0.40 },
-  inkgreen: { label: 'Everforest', bg: '#232a2e', panel: '#2d353b', panel2: '#343f44', line: '#475258', fg: '#d3c6aa', dim: '#a6b0a6', acc: '#a7c080', acc2: '#7fbbb3', btnFg: '#232a2e', ok: '#83c092', warn: '#dbbc7f', bad: '#ef8a8e', h2a: '#a7c080', h2b: '#7fbbb3', glowA: 0.40 },
-  lavender: { label: 'Macchiato', bg: '#181926', panel: '#24273a', panel2: '#363a4f', line: '#494d64', fg: '#cad3f5', dim: '#a5adcb', acc: '#b7bdf8', acc2: '#c6a0f6', btnFg: '#181926', ok: '#a6da95', warn: '#eed49f', bad: '#ed8796', h2a: '#b7bdf8', h2b: '#f5bde6', glowA: 0.40 },
-  morandi: { label: 'Frappe', bg: '#232634', panel: '#303446', panel2: '#414559', line: '#51576d', fg: '#c6d0f5', dim: '#a5adce', acc: '#8caaee', acc2: '#ca9ee6', btnFg: '#232634', ok: '#a6d189', warn: '#e5c890', bad: '#e78284', h2a: '#8caaee', h2b: '#ca9ee6', glowA: 0.38 },
-  mono: { label: 'PrimerDark', bg: '#0d1117', panel: '#161b22', panel2: '#21262d', line: '#30363d', fg: '#e6edf3', dim: '#8b949e', acc: '#f0f6fc', acc2: '#8b949e', btnFg: '#0d1117', ok: '#3fb950', warn: '#d29922', bad: '#f85149', h2a: '#f0f6fc', h2b: '#8b949e', codeBg: '#010409', glowA: 0.22 },
-  gold: { label: 'Gruvbox', bg: '#282828', panel: '#32302f', panel2: '#3c3836', line: '#504945', fg: '#ebdbb2', dim: '#a89984', acc: '#fabd2f', acc2: '#fe8019', btnFg: '#1d2021', ok: '#b8bb26', warn: '#d79921', bad: '#fb4934', h2a: '#fabd2f', h2b: '#fe8019', codeBg: '#1d2021', glowA: 0.40 },
-  wine: { label: 'Dracula', bg: '#21222c', panel: '#282a36', panel2: '#343746', line: '#44475a', fg: '#f8f8f2', dim: '#6272a4', acc: '#ff5555', acc2: '#ff79c6', btnFg: '#0b0d10', ok: '#50fa7b', warn: '#f1fa8c', bad: '#ff5555', h2a: '#ff5555', h2b: '#ff79c6', codeBg: '#191a21', glowA: 0.40 },
-  champagne: { label: 'SolarizedWarm', bg: '#f4f0d9', panel: '#fdf6e3', panel2: '#efebd4', line: '#ddd2b8', fg: '#3a332a', dim: '#8a7f6c', acc: '#b08d57', acc2: '#d4b483', btnFg: '#2a2113', ok: '#4a7350', warn: '#8a6d1f', bad: '#ab4f42', h2a: '#b08d57', h2b: '#a67c3d', codeBg: '#fdfbf6', glowA: 0.35 }
+  root: { label: 'MochaViolet', bg: '#131022', panel: '#1c1833', panel2: '#282045', line: '#3d3468', fg: '#e9e4ff', dim: '#aaa2d8', acc: '#89b4fa', acc2: '#cba6f7', btnFg: '#131022', ok: '#a6e3a1', warn: '#f9e2af', bad: '#f38ba8', h2a: '#ff8a3c', h2b: '#ff7089', codeBg: '#100d1d', glowA: 0.42 },
+  deepblue: { label: 'NordNavy', bg: '#081228', panel: '#0c1b3a', panel2: '#122752', line: '#20406f', fg: '#dce8ff', dim: '#9db1d6', acc: '#88c0d0', acc2: '#5e81ac', btnFg: '#081228', ok: '#a3be8c', warn: '#ebcb8b', bad: '#ff8585', h2a: '#8fbcbb', h2b: '#88c0d0', glowA: 0.42 },
+  inkgreen: { label: 'Forest', bg: '#0c1610', panel: '#11241a', panel2: '#183426', line: '#2a5038', fg: '#e0f2dd', dim: '#a6bfa8', acc: '#a7c080', acc2: '#7fbbb3', btnFg: '#0c1610', ok: '#83c092', warn: '#dbbc7f', bad: '#ef8a8e', h2a: '#a7c080', h2b: '#7fbbb3', glowA: 0.42 },
+  lavender: { label: 'Violet', bg: '#151129', panel: '#1e1940', panel2: '#2b2360', line: '#433a85', fg: '#e8e2ff', dim: '#aea6dd', acc: '#b7bdf8', acc2: '#c6a0f6', btnFg: '#151129', ok: '#a6da95', warn: '#eed49f', bad: '#ed8796', h2a: '#b7bdf8', h2b: '#f5bde6', glowA: 0.42 },
+  morandi: { label: 'DustyBlue', bg: '#1b1d2c', panel: '#252840', panel2: '#313454', line: '#474b7e', fg: '#d8dcf7', dim: '#aab0d8', acc: '#8caaee', acc2: '#ca9ee6', btnFg: '#1b1d2c', ok: '#a6d189', warn: '#e5c890', bad: '#f09390', h2a: '#8caaee', h2b: '#ca9ee6', glowA: 0.40 },
+  mono: { label: 'Neutral', bg: '#0a0c10', panel: '#13171d', panel2: '#1d232c', line: '#2f3743', fg: '#f1f4f8', dim: '#a6aeb8', acc: '#f0f6fc', acc2: '#8b949e', btnFg: '#0a0c10', ok: '#3fb950', warn: '#d29922', bad: '#f85149', h2a: '#f0f6fc', h2b: '#a8b0ba', codeBg: '#07090c', glowA: 0.20 },
+  gold: { label: 'GoldenBrown', bg: '#171004', panel: '#231a08', panel2: '#32250d', line: '#52401a', fg: '#f8e9c2', dim: '#c9b687', acc: '#fabd2f', acc2: '#fe8019', btnFg: '#171004', ok: '#b8bb26', warn: '#d79921', bad: '#ff7d68', h2a: '#fabd2f', h2b: '#fe8019', codeBg: '#120c03', glowA: 0.45 },
+  wine: { label: 'WineRed', bg: '#190a0e', panel: '#250f16', panel2: '#35151f', line: '#5c2632', fg: '#ffe4e7', dim: '#d3a0a6', acc: '#ff5555', acc2: '#ff79c6', btnFg: '#190a0e', ok: '#50fa7b', warn: '#f1fa8c', bad: '#ff8585', h2a: '#ff6b6b', h2b: '#ff79c6', codeBg: '#140809', glowA: 0.42 },
+  champagne: { label: 'GoldenCream', bg: '#f7f0d7', panel: '#fffbee', panel2: '#f2e9cd', line: '#dccca0', fg: '#3f3423', dim: '#665a40', acc: '#b08d57', acc2: '#d4b483', btnFg: '#2a2113', ok: '#42634a', warn: '#75601f', bad: '#9c4a3e', h2a: '#6f5b3a', h2b: '#7d5a2c', codeBg: '#fdfaf1', glowA: 0.40 }
 };
 
 // ---------- engine ----------
@@ -73,9 +77,9 @@ function build(key, sp) {
     return best;
   };
 
-  // a) static + liveBg
+  // a) static + liveBg (small acc mix: keeps surface dark so red text stays vivid)
   S.codeBg = S.codeBg || bg;
-  S.liveBg = surf(p => mix(bg, S.acc, p), 0.12);
+  S.liveBg = surf(p => mix(bg, S.acc, p), 0.07);
   const TXT = [bg, S.panel, S.panel2, S.codeBg, S.liveBg];
 
   // b) semantic text colors first (later surfaces depend on them)
@@ -84,6 +88,7 @@ function build(key, sp) {
   S.bad = fix('bad', S.bad, TXT);
 
   // c) remaining derived surfaces (fg must stay >= 4.5 on each)
+  S.bg2 = surf(p => mix(bg, S.acc, p), 0.22);     // page glow + header gradient wash
   S.partialBg = surf(p => mix(bg, S.acc, p), 0.30);
   S.exerBg = surf(p => mix(mix(S.panel, S.panel2, 0.5), S.acc, p), 0.08);
   S.msgMe = surf(p => mix(S.panel2, S.acc, p), 0.28);
@@ -95,11 +100,11 @@ function build(key, sp) {
   S.dayrowHover = surf(p => mix(S.panel2, fg, p), 0.07);
   S.starterBg = S.codeBg;
 
-  // d) dim / h2 gradient text
-  const DIM_S = [bg, S.panel, S.panel2, S.codeBg, S.liveBg, S.dayrowHover, S.exerBg];
+  // d) dim / h2 gradient text (brand text sits on header bg2 wash)
+  const DIM_S = [bg, S.panel, S.panel2, S.codeBg, S.liveBg, S.dayrowHover, S.exerBg, S.bg2];
   S.dim = fix('dim', S.dim, DIM_S);
-  S.h2a = fix('h2a', S.h2a, [S.panel, bg]);
-  S.h2b = fix('h2b', S.h2b, [S.panel, bg]);
+  S.h2a = fix('h2a', S.h2a, [S.panel, bg, S.bg2]);
+  S.h2b = fix('h2b', S.h2b, [S.panel, bg, S.bg2]);
 
   // e) borders / tints
   S.exerLine = mix(S.line, S.acc, 0.35);
@@ -110,8 +115,10 @@ function build(key, sp) {
   S.hwglow = S.warn;
   S.glow = rgba(S.acc, S.glowA);
 
-  // f) accent-as-text (links etc) - must pass on every surface it can appear on
-  const ACC_S = [bg, S.panel, S.panel2, S.codeBg, S.liveBg, S.dayrowHover, S.exerBg, S.msgMe, S.msgAiBg, S.hintBg, S.wboxBg, S.toastBg, S.achGotBg, S.partialBg, S.starterBg];
+  // f) accent-as-text (links etc) - only surfaces where links actually appear
+  //    (NOT partialBg/starterBg: calendar cells and code blocks hold no links,
+  //     including them would gray-wash accText through the 4.55 margin)
+  const ACC_S = [bg, S.panel, S.panel2, S.codeBg, S.liveBg, S.dayrowHover, S.exerBg, S.msgMe, S.msgAiBg, S.hintBg, S.wboxBg, S.toastBg, S.achGotBg, S.bg2];
   S.accText = fix('accText', S.acc, ACC_S);
 
   // g) specialty text colors (chain ends at fg where fg is guaranteed on that surface)
@@ -141,7 +148,7 @@ function build(key, sp) {
   // i) pair report
   const pairs = [];
   const add = (name, t, b) => pairs.push({ name, t, b, r: cr(t, b) });
-  const FG_S = [bg, S.panel, S.panel2, S.codeBg, S.liveBg, S.dayrowHover, S.exerBg, S.starterBg, S.msgMe, S.msgAiBg, S.achGotBg, S.partialBg, S.toastBg, S.hintBg, S.wboxBg];
+  const FG_S = [bg, S.panel, S.panel2, S.codeBg, S.liveBg, S.dayrowHover, S.exerBg, S.starterBg, S.msgMe, S.msgAiBg, S.achGotBg, S.partialBg, S.toastBg, S.hintBg, S.wboxBg, S.bg2];
   FG_S.forEach((s, i) => add(`fg@s${i}`, fg, s));
   DIM_S.forEach((s, i) => add(`dim@s${i}`, S.dim, s));
   ACC_S.forEach((s, i) => add(`accText@s${i}`, S.accText, s));
@@ -157,7 +164,7 @@ function build(key, sp) {
 }
 
 // ---------- CSS emission ----------
-const ORDER = ['bg', 'panel', 'panel2', 'line', 'fg', 'dim', 'acc', 'acc2', 'btnFg', 'accText', 'ok', 'warn', 'bad', 'btnGoodFg', 'glow', 'h2a', 'h2b', 'codeBg', 'partialBg', 'partialFg', 'fullFg', 'exerBg', 'exerLine', 'exerFg', 'starterBg', 'starterFg', 'msgMe', 'msgAiBg', 'msgAiLine', 'achGotBg', 'toastBg', 'toastFg', 'hintBg', 'hintLine', 'hintFg', 'wboxBg', 'wboxLine', 'wboxFg', 'liveBg', 'liveLine', 'hwglow', 'dayrowHover', 'outOk', 'outErr'];
+const ORDER = ['bg', 'bg2', 'panel', 'panel2', 'line', 'fg', 'dim', 'acc', 'acc2', 'btnFg', 'accText', 'ok', 'warn', 'bad', 'btnGoodFg', 'glow', 'h2a', 'h2b', 'codeBg', 'partialBg', 'partialFg', 'fullFg', 'exerBg', 'exerLine', 'exerFg', 'starterBg', 'starterFg', 'msgMe', 'msgAiBg', 'msgAiLine', 'achGotBg', 'toastBg', 'toastFg', 'hintBg', 'hintLine', 'hintFg', 'wboxBg', 'wboxLine', 'wboxFg', 'liveBg', 'liveLine', 'hwglow', 'dayrowHover', 'outOk', 'outErr'];
 const CSSN = { btnFg: 'btn-fg', accText: 'acc-text', btnGoodFg: 'btn-good-fg', codeBg: 'code-bg', partialBg: 'partial-bg', partialFg: 'partial-fg', fullFg: 'full-fg', exerBg: 'exer-bg', exerLine: 'exer-line', exerFg: 'exer-fg', starterBg: 'starter-bg', starterFg: 'starter-fg', msgMe: 'msg-me', msgAiBg: 'msg-ai-bg', msgAiLine: 'msg-ai-line', achGotBg: 'ach-got-bg', toastBg: 'toast-bg', toastFg: 'toast-fg', hintBg: 'hint-bg', hintLine: 'hint-line', hintFg: 'hint-fg', wboxBg: 'wbox-bg', wboxLine: 'wbox-line', wboxFg: 'wbox-fg', liveBg: 'live-bg', liveLine: 'live-line', hwglow: 'hwglow', dayrowHover: 'dayrow-hover', outOk: 'out-ok', outErr: 'out-err' };
 
 function emit(results) {
