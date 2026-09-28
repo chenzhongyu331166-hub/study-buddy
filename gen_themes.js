@@ -29,14 +29,14 @@ const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 // Dark-surface semantic colors are pre-baked light enough to pass 4.5:1 so the
 // engine never gray-washes them. bg2 = full-page radial glow + header gradient.
 const SPECS = {
-  root: { label: 'MochaViolet', bg: '#131022', panel: '#1c1833', panel2: '#282045', line: '#3d3468', fg: '#e9e4ff', dim: '#aaa2d8', acc: '#89b4fa', acc2: '#cba6f7', btnFg: '#131022', ok: '#a6e3a1', warn: '#f9e2af', bad: '#f38ba8', h2a: '#ff8a3c', h2b: '#ff7089', codeBg: '#100d1d', glowA: 0.42 },
-  deepblue: { label: 'NordNavy', bg: '#081228', panel: '#0c1b3a', panel2: '#122752', line: '#20406f', fg: '#dce8ff', dim: '#9db1d6', acc: '#88c0d0', acc2: '#5e81ac', btnFg: '#081228', ok: '#a3be8c', warn: '#ebcb8b', bad: '#ff8585', h2a: '#8fbcbb', h2b: '#88c0d0', glowA: 0.42 },
-  inkgreen: { label: 'Forest', bg: '#040e08', panel: '#091a10', panel2: '#0f2718', line: '#1f4930', fg: '#d5edd7', dim: '#9ab49e', acc: '#4eb173', acc2: '#79c7a8', btnFg: '#04100a', ok: '#8ee0b0', warn: '#e5c97e', bad: '#f0918b', h2a: '#62c47d', h2b: '#45b5a5', glowA: 0.45 },
-  lavender: { label: 'Violet', bg: '#151129', panel: '#1e1940', panel2: '#2b2360', line: '#433a85', fg: '#e8e2ff', dim: '#aea6dd', acc: '#b7bdf8', acc2: '#c6a0f6', btnFg: '#151129', ok: '#a6da95', warn: '#eed49f', bad: '#ed8796', h2a: '#b7bdf8', h2b: '#f5bde6', glowA: 0.42 },
-  morandi: { label: 'Morandi', bg: '#26211f', panel: '#33292c', panel2: '#2c332b', line: '#5a4f60', fg: '#ece4df', dim: '#b0a29a', acc: '#cc9ca4', acc2: '#a3b48c', btnFg: '#26211f', ok: '#a3b48c', warn: '#d9c193', bad: '#db9c92', h2a: '#cc9ca4', h2b: '#a3b48c', glowA: 0.38 },
-  mono: { label: 'Neutral', bg: '#0a0c10', panel: '#13171d', panel2: '#1d232c', line: '#2f3743', fg: '#f1f4f8', dim: '#a6aeb8', acc: '#f0f6fc', acc2: '#8b949e', btnFg: '#0a0c10', ok: '#3fb950', warn: '#d29922', bad: '#f85149', h2a: '#f0f6fc', h2b: '#a8b0ba', codeBg: '#07090c', glowA: 0.20 },
-  gold: { label: 'BlackGold', bg: '#090909', panel: '#111110', panel2: '#181715', line: '#3a3119', fg: '#f3ecdd', dim: '#b6ab90', acc: '#f5c451', acc2: '#d9a436', btnFg: '#0d0c08', ok: '#b8c97a', warn: '#e8b95c', bad: '#e07a6a', h2a: '#f5c451', h2b: '#d9a436', codeBg: '#0d0c09', glowA: 0.45 },
-  wine: { label: 'Burgundy', bg: '#190a0e', panel: '#250f16', panel2: '#35151f', line: '#5c2632', fg: '#ffe4e7', dim: '#d3a0a6', acc: '#7e2a38', acc2: '#96374a', btnFg: '#ffe4e7', ok: '#86d4a2', warn: '#ecc66f', bad: '#e8796c', h2a: '#c96476', h2b: '#df9f6e', codeBg: '#140809', glowA: 0.45 },
+  root: { label: 'MochaViolet', bg: '#131022', panel: '#1c1833', panel2: '#282045', line: '#3d3468', fg: '#e9e4ff', dim: '#aaa2d8', acc: '#89b4fa', acc2: '#cba6f7', btnFg: '#131022', ok: '#a6e3a1', warn: '#f9e2af', bad: '#f38ba8', h2a: '#e08a5e', h2b: '#d3805a', codeBg: '#100d1d', glowA: 0.15 },
+  deepblue: { label: 'NordNavy', bg: '#081228', panel: '#0c1b3a', panel2: '#122752', line: '#20406f', fg: '#dce8ff', dim: '#9db1d6', acc: '#88c0d0', acc2: '#5e81ac', btnFg: '#081228', ok: '#a3be8c', warn: '#ebcb8b', bad: '#ff8585', h2a: '#8fbcbb', h2b: '#88c0d0', glowA: 0.15 },
+  inkgreen: { label: 'Forest', bg: '#040e08', panel: '#091a10', panel2: '#0f2718', line: '#1f4930', fg: '#dbe4da', dim: '#92a494', acc: '#45955f', acc2: '#6f9e8e', btnFg: '#04100a', ok: '#82b896', warn: '#c9b06a', bad: '#d4877e', h2a: '#5aab78', h2b: '#4f9e6a', glowA: 0.12 },
+  lavender: { label: 'Violet', bg: '#151129', panel: '#1e1940', panel2: '#2b2360', line: '#433a85', fg: '#e8e2ff', dim: '#aea6dd', acc: '#b7bdf8', acc2: '#c6a0f6', btnFg: '#151129', ok: '#a6da95', warn: '#eed49f', bad: '#ed8796', h2a: '#b7bdf8', h2b: '#b0aef2', glowA: 0.15 },
+  morandi: { label: 'Morandi', bg: '#26211f', panel: '#33292c', panel2: '#2c332b', line: '#5a4f60', fg: '#ece4df', dim: '#b0a29a', acc: '#cc9ca4', acc2: '#a3b48c', btnFg: '#26211f', ok: '#a3b48c', warn: '#d9c193', bad: '#db9c92', h2a: '#cc9ca4', h2b: '#b89aa1', glowA: 0.14 },
+  mono: { label: 'Neutral', bg: '#0a0c10', panel: '#13171d', panel2: '#1d232c', line: '#2f3743', fg: '#f1f4f8', dim: '#a6aeb8', acc: '#f0f6fc', acc2: '#8b949e', btnFg: '#0a0c10', ok: '#3fb950', warn: '#d29922', bad: '#f85149', h2a: '#f0f6fc', h2b: '#a8b0ba', codeBg: '#07090c', glowA: 0.10 },
+  gold: { label: 'BlackGold', bg: '#090909', panel: '#111110', panel2: '#181715', line: '#3a3119', fg: '#f3ecdd', dim: '#b6ab90', acc: '#f5c451', acc2: '#d9a436', btnFg: '#0d0c08', ok: '#b8c97a', warn: '#e8b95c', bad: '#e07a6a', h2a: '#f5c451', h2b: '#d9a436', codeBg: '#0d0c09', glowA: 0.15 },
+  wine: { label: 'Burgundy', bg: '#190a0e', panel: '#250f16', panel2: '#35151f', line: '#5c2632', fg: '#f2e8e6', dim: '#bfa4a4', acc: '#7e2a38', acc2: '#96374a', btnFg: '#f7ebe9', ok: '#7eb096', warn: '#d4b56f', bad: '#d48270', h2a: '#c96476', h2b: '#d6788a', codeBg: '#140809', glowA: 0.12 },
   champagne: { label: 'GoldenCream', bg: '#f7f0d7', panel: '#fffbee', panel2: '#f2e9cd', line: '#dccca0', fg: '#3f3423', dim: '#665a40', acc: '#b08d57', acc2: '#d4b483', btnFg: '#2a2113', ok: '#42634a', warn: '#75601f', bad: '#9c4a3e', h2a: '#6f5b3a', h2b: '#7d5a2c', codeBg: '#fdfaf1', glowA: 0.40 }
 };
 
@@ -88,7 +88,7 @@ function build(key, sp) {
   S.bad = fix('bad', S.bad, TXT);
 
   // c) remaining derived surfaces (fg must stay >= 4.5 on each)
-  S.bg2 = surf(p => mix(bg, S.acc, p), 0.22);     // page glow + header gradient wash
+  S.bg2 = surf(p => mix(bg, S.acc, p), 0.07);     // page glow + header gradient wash (muted: no neon haze)
   S.partialBg = surf(p => mix(bg, S.acc, p), 0.30);
   S.exerBg = surf(p => mix(mix(S.panel, S.panel2, 0.5), S.acc, p), 0.08);
   S.msgMe = surf(p => mix(S.panel2, S.acc, p), 0.28);
