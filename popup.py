@@ -107,7 +107,7 @@ class Reminder:
             self.pd = next((d for d in self.plan["days"] if d["day"] == self.n), None)
 
         self.root = tk.Tk()
-        self.root.title("学习台提醒")
+        self.root.title("84天速成CS · 提醒")
         self.root.configure(bg=BG)
         self.root.attributes("-topmost", True)
         self.root.resizable(False, False)

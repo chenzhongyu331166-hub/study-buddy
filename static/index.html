@@ -3,11 +3,109 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>学习台 StudyBuddy · 84天vibecoding</title>
+<title>84天速成CS · 学习台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff8a3c'/%3E%3Cstop offset='1' stop-color='%23e8355a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Ctext x='31' y='45' font-size='34' font-weight='900' text-anchor='middle' fill='%23fff' font-family='Arial Black,Arial'%3E84%3C/text%3E%3Cpath d='M44 10l-6 12h7l-9 14' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
-  --fg:#e6e9ef; --dim:#98a1b0; --acc:#4f8cff; --ok:#39c07a; --warn:#e0a63c; --bad:#e05c5c;
+  --fg:#e6e9ef; --dim:#98a1b0; --acc:#4f8cff; --acc2:#7a5cff; --btn-fg:#fff;
+  --ok:#39c07a; --warn:#e0a63c; --bad:#e05c5c; --glow:rgba(79,140,255,.35);
+  --h2a:#ff8a3c; --h2b:#e8355a;
+  --code-bg:#0f1115; --partial-bg:#27406e; --partial-fg:#cfe0ff; --full-fg:#062;
+  --exer-bg:#171d2b; --exer-line:#33507e; --exer-fg:#9ec5ff; --starter-bg:#0f1115; --starter-fg:#9fe3a8;
+  --msg-me:#243252; --msg-ai-bg:#1d2a22; --msg-ai-line:#2c4436;
+  --ach-got-bg:#17281f; --toast-bg:#1d3b2a; --toast-fg:#d9ffe9;
+  --hint-bg:#152238; --hint-line:#2a4a7a; --hint-fg:#9ec5ff;
+  --wbox-bg:#2b2413; --wbox-line:#6b551f; --wbox-fg:#f0c96a;
+  --live-bg:#1a2030; --live-line:#2c3a55; --hwglow:#e0a63c; --dayrow-hover:#20242e;
+  --out-ok:#9fe3a8; --out-err:#ff7b72;
+}
+html[data-theme="deepblue"]{
+  --bg:#0a1020; --panel:#101a33; --panel2:#16224a; --line:#24365e;
+  --fg:#e3ebf7; --dim:#8ba3c7; --acc:#3b82f6; --acc2:#60a5fa; --glow:rgba(59,130,246,.4);
+  --h2a:#60a5fa; --h2b:#1d4ed8; --partial-bg:#1e3a6e; --partial-fg:#cfe0ff;
+  --exer-bg:#12203f; --exer-line:#2f4f8f; --msg-me:#1e3155; --msg-ai-bg:#122737; --msg-ai-line:#24506e;
+  --ach-got-bg:#14301f; --hint-bg:#0f2440; --hint-line:#24497a; --live-bg:#141f3d; --live-line:#2c4470;
+  --dayrow-hover:#182a52; --hwglow:#f0c75e;
+}
+html[data-theme="inkgreen"]{
+  --bg:#0b1410; --panel:#11201a; --panel2:#16291f; --line:#26443a;
+  --fg:#e2efe8; --dim:#8fae9f; --acc:#2f9e6e; --acc2:#49c391; --glow:rgba(47,158,110,.4);
+  --h2a:#49c391; --h2b:#17734e; --partial-bg:#1e4a38; --partial-fg:#c9f0dd;
+  --exer-bg:#12251d; --exer-line:#2c5a45; --exer-fg:#9edcc0; --starter-fg:#8fe3b0;
+  --msg-me:#1c3a2c; --msg-ai-bg:#142b22; --msg-ai-line:#2a4a38;
+  --ach-got-bg:#14301f; --hint-bg:#112a20; --hint-line:#2a5a44; --live-bg:#132a20; --live-line:#2a5544;
+  --dayrow-hover:#163026; --hwglow:#e0c95e;
+}
+html[data-theme="lavender"]{
+  --bg:#16141e; --panel:#1e1b2b; --panel2:#262238; --line:#3a3454;
+  --fg:#ece9f5; --dim:#a79fc4; --acc:#a78bfa; --acc2:#c4b5fd; --glow:rgba(167,139,250,.4);
+  --h2a:#c4b5fd; --h2b:#7c5cf0; --partial-bg:#3a3270; --partial-fg:#ddd6ff;
+  --exer-bg:#221f38; --exer-line:#4a4278; --exer-fg:#c4b8f5;
+  --msg-me:#2c2850; --msg-ai-bg:#232040; --msg-ai-line:#423a70;
+  --ach-got-bg:#1f2c3a; --hint-bg:#262248; --hint-line:#453e7a; --hint-fg:#c9c0f5;
+  --live-bg:#201d36; --live-line:#3e3866; --dayrow-hover:#262244; --hwglow:#f0c75e;
+}
+html[data-theme="morandi"]{
+  --bg:#1a1a1c; --panel:#232326; --panel2:#2b2b2f; --line:#3d3d42;
+  --fg:#e8e6e3; --dim:#a8a39d; --acc:#9aa7b0; --acc2:#b7a99a; --btn-fg:#17181a;
+  --ok:#8fae91; --warn:#c7b28f; --bad:#c08b8b; --glow:rgba(154,167,176,.35);
+  --h2a:#b7a99a; --h2b:#8d9dae; --partial-bg:#3f4a52; --partial-fg:#dfe3e0;
+  --exer-bg:#2a2a2e; --exer-line:#4a4f56; --exer-fg:#aebcc7; --starter-fg:#a5c4a8;
+  --msg-me:#33343a; --msg-ai-bg:#2c302e; --msg-ai-line:#474e4a;
+  --ach-got-bg:#26302a; --toast-bg:#2a332c; --toast-fg:#dff0e2;
+  --hint-bg:#2b3138; --hint-line:#47525e; --hint-fg:#aebcc7;
+  --wbox-bg:#33301f; --wbox-line:#57503a; --wbox-fg:#d8c79a;
+  --live-bg:#2e2e33; --live-line:#47474e; --dayrow-hover:#2e2e33; --hwglow:#d8c79a;
+}
+html[data-theme="mono"]{
+  --bg:#0c0c0c; --panel:#161616; --panel2:#1f1f1f; --line:#333333;
+  --fg:#f2f2f2; --dim:#a0a0a0; --acc:#e5e5e5; --acc2:#9a9a9a; --btn-fg:#111111;
+  --ok:#7dbf8f; --warn:#d8b45e; --bad:#e07575; --glow:rgba(255,255,255,.22);
+  --h2a:#f0f0f0; --h2b:#8a8a8a; --partial-bg:#3a3a3a; --partial-fg:#dddddd;
+  --exer-bg:#1a1a1a; --exer-line:#444444; --exer-fg:#cfcfcf; --starter-fg:#a9d8b2;
+  --msg-me:#2c2c2c; --msg-ai-bg:#1c1c1c; --msg-ai-line:#3a3a3a;
+  --ach-got-bg:#1c2420; --toast-bg:#1e2a22;
+  --hint-bg:#1a1f2a; --hint-line:#3a4356; --hint-fg:#c8d2e0;
+  --live-bg:#242424; --live-line:#3d3d3d; --dayrow-hover:#242424; --hwglow:#d8b45e;
+}
+html[data-theme="gold"]{
+  --bg:#0e0d0a; --panel:#17150f; --panel2:#201d14; --line:#3a3423;
+  --fg:#f2ead6; --dim:#b3a681; --acc:#d4af37; --acc2:#f0c75e; --btn-fg:#1a1500;
+  --ok:#a3b86c; --warn:#e0b84c; --bad:#d4735f; --glow:rgba(212,175,55,.4);
+  --h2a:#f0c75e; --h2b:#a8842c; --partial-bg:#4a3f1e; --partial-fg:#efe0b0;
+  --exer-bg:#1e1a10; --exer-line:#4f4526; --exer-fg:#e6cf8a; --starter-fg:#d8e3a0;
+  --msg-me:#38301a; --msg-ai-bg:#201d12; --msg-ai-line:#4a4020;
+  --ach-got-bg:#20280f; --toast-bg:#26280f; --toast-fg:#f5e9c0;
+  --hint-bg:#26200f; --hint-line:#56471f; --hint-fg:#e6cf8a;
+  --wbox-bg:#2a2413; --wbox-line:#5f4f1f; --wbox-fg:#e8cf7a;
+  --live-bg:#241f12; --live-line:#4a4020; --dayrow-hover:#262110; --hwglow:#f0c75e;
+}
+html[data-theme="wine"]{
+  --bg:#140b0c; --panel:#1e1113; --panel2:#281719; --line:#45292c;
+  --fg:#f3e6e7; --dim:#bb9598; --acc:#c23141; --acc2:#e05a6b; --glow:rgba(194,49,65,.4);
+  --h2a:#e05a6b; --h2b:#7a1524; --ok:#52b788; --warn:#dda15e; --bad:#ef6353;
+  --partial-bg:#5a2730; --partial-fg:#f5ccd0;
+  --exer-bg:#241416; --exer-line:#5f3038; --exer-fg:#f0a8b0;
+  --msg-me:#43202c; --msg-ai-bg:#241418; --msg-ai-line:#4e2a32;
+  --ach-got-bg:#1e2c20; --toast-bg:#2c1a20; --toast-fg:#ffdee2;
+  --hint-bg:#2b1620; --hint-line:#6b3040; --hint-fg:#f0b8c0;
+  --wbox-bg:#2e2013; --wbox-line:#6b4a2a; --wbox-fg:#ecc890;
+  --live-bg:#2a181c; --live-line:#5a2e36; --dayrow-hover:#2b181c; --hwglow:#e0b85e;
+}
+html[data-theme="champagne"]{
+  --bg:#f4efe6; --panel:#fffdf8; --panel2:#f0e9db; --line:#ddd2bd;
+  --fg:#3a332a; --dim:#8a7f6c; --acc:#b08d57; --acc2:#d4b483; --btn-fg:#ffffff;
+  --ok:#5f8f63; --warn:#c9a24b; --bad:#c06a5a; --glow:rgba(176,141,87,.35);
+  --h2a:#d4b483; --h2b:#a67c3d; --partial-bg:#e3d7bd; --partial-fg:#4a4030; --full-fg:#fbf7ee;
+  --code-bg:#fdfbf6; --exer-bg:#f7f1e4; --exer-line:#d8c9a8; --exer-fg:#8a6d33;
+  --starter-bg:#efe7d6; --starter-fg:#4a6b4d;
+  --msg-me:#e9e0cd; --msg-ai-bg:#f2ead9; --msg-ai-line:#ddd0b0;
+  --ach-got-bg:#e8efe0; --toast-bg:#e9f2e6; --toast-fg:#2c4a30;
+  --hint-bg:#eef3f8; --hint-line:#c9d6e5; --hint-fg:#3f5f80;
+  --wbox-bg:#f6ecd6; --wbox-line:#e0c98f; --wbox-fg:#8a6a1f;
+  --live-bg:#ece5d5; --live-line:#d8cbb0; --dayrow-hover:#f0e9db; --hwglow:#b08d57;
+  --out-ok:#2f7d4f; --out-err:#b3403f;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font:15px/1.6 "Microsoft YaHei",system-ui,sans-serif}
@@ -18,40 +116,42 @@ header h1{font-size:18px}
 header .sub{color:var(--dim);font-size:12px}
 nav{display:flex;gap:6px;margin-left:auto}
 nav button{background:transparent;border:1px solid var(--line);color:var(--dim);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:14px}
-nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+nav button.on{background:linear-gradient(135deg,var(--acc),var(--acc2));border-color:transparent;color:var(--btn-fg);box-shadow:0 2px 10px var(--glow)}
 main{padding:22px;max-width:1100px;margin:0 auto}
 .page{display:none}.page.on{display:block}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
 .card h2{font-size:16px;margin-bottom:10px}
+.card h2::before{content:"";display:inline-block;width:4px;height:14px;background:linear-gradient(180deg,var(--h2a),var(--h2b));border-radius:2px;margin-right:8px;vertical-align:-2px}
 .card h3{font-size:14px;color:var(--dim);margin:12px 0 6px}
 .muted{color:var(--dim);font-size:13px}
+.brandg{background:linear-gradient(90deg,var(--h2a),var(--h2b));-webkit-background-clip:text;background-clip:text;color:transparent}
 .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--dim);margin-right:6px}
 .modelsel{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 8px;font-size:12px;color:var(--fg);max-width:340px;cursor:pointer}
-#codeIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;box-sizing:border-box;resize:vertical;line-height:1.45}
-#stdinIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:200px;resize:vertical;line-height:1.45}
-.liverow{display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap;background:#1a2030;border:1px solid #2c3a55;border-radius:8px;padding:8px 10px}
+#codeIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:var(--code-bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;box-sizing:border-box;resize:vertical;line-height:1.45}
+#stdinIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:var(--code-bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:200px;resize:vertical;line-height:1.45}
+.liverow{display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap;background:var(--live-bg);border:1px solid var(--live-line);border-radius:8px;padding:8px 10px}
 .liverow.on{display:flex}
 .liverow .lbl{color:var(--acc);font-size:13px;white-space:nowrap}
-#liveIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:#0f1115;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:180px}
+#liveIn{font-family:Consolas,'Courier New',monospace;font-size:13px;background:var(--code-bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;flex:1;min-width:180px}
 .liverow .btn{padding:7px 12px;font-size:13px}
-.warnbox{background:#2b2413;border:1px solid #6b551f;color:#f0c96a;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;display:none}
+.warnbox{background:var(--wbox-bg);border:1px solid var(--wbox-line);color:var(--wbox-fg);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;display:none}
 .warnbox.on{display:block}
-.hintbox{background:#152238;border:1px solid #2a4a7a;color:#9ec5ff;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;display:none}
+.hintbox{background:var(--hint-bg);border:1px solid var(--hint-line);color:var(--hint-fg);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;display:none}
 .hintbox.on{display:block}
 .hintbox li{margin:4px 0 4px 18px}
-.grayp{color:#98a1b0}
+.grayp{color:var(--dim)}
 .dsec{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--panel2)}
 .dsec h4{font-size:14px;color:var(--acc);margin-bottom:6px}
 .dsec .pts{margin:6px 0 6px 18px;color:var(--fg);font-size:13px}
 .dsec .pts li{margin:3px 0}
-.exer{background:#171d2b;border:1px dashed #33507e;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13px}
-.exer summary{cursor:pointer;color:#9ec5ff}
-.exer .starter{font-family:Consolas,monospace;font-size:12px;background:#0f1115;color:#9fe3a8;padding:6px 8px;border-radius:6px;margin-top:6px;white-space:pre-wrap;word-break:break-all}
+.exer{background:var(--exer-bg);border:1px dashed var(--exer-line);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13px}
+.exer summary{cursor:pointer;color:var(--exer-fg)}
+.exer .starter{font-family:Consolas,monospace;font-size:12px;background:var(--starter-bg);color:var(--starter-fg);padding:6px 8px;border-radius:6px;margin-top:6px;white-space:pre-wrap;word-break:break-all}
 .subhist{border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
 .subhist .hitem{padding:7px 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);margin-bottom:6px;cursor:pointer;font-size:13px}
 .subhist .hitem:hover{border-color:var(--acc)}
-.fb{white-space:pre-wrap;background:#0f1115;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;font-size:14px;line-height:1.65;display:none}
-.runout{background:#0f1115;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px;min-height:44px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;display:none}
+.fb{white-space:pre-wrap;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;font-size:14px;line-height:1.65;display:none}
+.runout{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px;min-height:44px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;display:none}
 .task{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
 .task input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px}
 .task.done{opacity:.55}
@@ -60,7 +160,7 @@ main{padding:22px;max-width:1100px;margin:0 auto}
 .res{padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
 .res:last-child{border-bottom:none}
 .res .src{color:var(--dim);font-size:12px}
-.btn{background:var(--acc);border:none;color:#fff;padding:9px 16px;border-radius:9px;cursor:pointer;font-size:14px}
+.btn{background:var(--acc);border:none;color:var(--btn-fg);padding:9px 16px;border-radius:9px;cursor:pointer;font-size:14px}
 .btn:hover{filter:brightness(1.1)}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
 .btn.good{background:var(--ok)}
@@ -75,27 +175,28 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--ok))}
 .cal{display:grid;grid-template-columns:repeat(14,1fr);gap:6px}
 .cal .d{aspect-ratio:1;border-radius:7px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dim);cursor:pointer}
-.cal .d.partial{background:#27406e;color:#cfe0ff}
-.cal .d.full{background:var(--ok);color:#062;border-color:var(--ok)}
+.cal .d.partial{background:var(--partial-bg);color:var(--partial-fg)}
+.cal .d.full{background:var(--ok);color:var(--full-fg);border-color:var(--ok)}
 .cal .d.today{outline:2px solid var(--warn)}
+.cal .d.hw{border-color:var(--hwglow);box-shadow:0 0 7px var(--hwglow)}
 .stage{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--panel2)}
 .stage .hd{display:flex;justify-content:space-between;cursor:pointer}
 .stage .hd b{font-size:14px}
 .dayrow{display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px dashed var(--line);font-size:14px;cursor:pointer}
-.dayrow:hover{background:#20242e}
+.dayrow:hover{background:var(--dayrow-hover)}
 .dayrow .no{width:44px;color:var(--acc);font-weight:600}
 .dayrow .dt{width:96px;color:var(--dim);font-size:12px}
 .dayrow .st3{width:70px;font-size:12px}
 .chat{height:430px;overflow-y:auto;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px}
 .msg{margin-bottom:12px;white-space:pre-wrap}
 .msg .who{font-size:12px;color:var(--dim);margin-bottom:3px}
-.msg.me .bd{background:#243252;border-radius:10px;padding:9px 12px;display:inline-block}
-.msg.ai .bd{background:#1d2a22;border-radius:10px;padding:9px 12px;display:inline-block;border:1px solid #2c4436}
+.msg.me .bd{background:var(--msg-me);border-radius:10px;padding:9px 12px;display:inline-block}
+.msg.ai .bd{background:var(--msg-ai-bg);border-radius:10px;padding:9px 12px;display:inline-block;border:1px solid var(--msg-ai-line)}
 .ach{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel2);opacity:.45}
-.ach.got{opacity:1;border-color:var(--ok);background:#17281f}
+.ach.got{opacity:1;border-color:var(--ok);background:var(--ach-got-bg)}
 .ach b{display:block;margin-bottom:4px}
 .achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.toast{position:fixed;right:22px;top:70px;background:#1d3b2a;border:1px solid var(--ok);color:#d9ffe9;padding:13px 18px;border-radius:10px;z-index:99;max-width:320px;display:none}
+.toast{position:fixed;right:22px;top:70px;background:var(--toast-bg);border:1px solid var(--ok);color:var(--toast-fg);padding:13px 18px;border-radius:10px;z-index:99;max-width:320px;display:none}
 #detail{min-height:120px}
 .loading{color:var(--dim);font-size:13px}
 .fileitem{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px dashed var(--line);font-size:13px}
@@ -104,9 +205,18 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 </head>
 <body>
 <header>
-  <div>
-    <h1>学习台 StudyBuddy</h1>
-    <div class="sub" id="hdSub">84天 vibecoding · AI应用开发 + 数据分析 + 408考研基础</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <svg width="34" height="34" viewBox="0 0 64 64" style="flex:none">
+      <defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ff8a3c"/><stop offset="1" stop-color="#e8355a"/></linearGradient></defs>
+      <rect width="64" height="64" rx="15" fill="url(#hg)"/>
+      <text x="31" y="45" font-size="34" font-weight="900" text-anchor="middle" fill="#fff" font-family="Arial Black,Arial">84</text>
+      <path d="M44 10l-6 12h7l-9 14" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h1><span class="brandg">84天速成CS</span> <span style="font-size:12px;color:var(--dim);font-weight:normal">StudyBuddy</span></h1>
+      <div class="sub" id="hdSub">84天 vibecoding · AI应用开发 + 数据分析 + 408考研基础</div>
+    </div>
   </div>
   <nav id="nav">
     <button data-p="today" class="on">今日</button>
@@ -116,6 +226,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     <button data-p="ai">AI老师</button>
     <button data-p="ach">成就</button>
   </nav>
+  <select id="skinSel" class="modelsel" title="切换皮肤" style="max-width:130px;margin-left:10px"></select>
 </header>
 <main>
 
@@ -135,7 +246,10 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
       </div>
       <h3>作业笔记(卡在哪/怎么解决的)</h3>
       <textarea id="hwNote" rows="3" placeholder="写代码的过程记录，AI老师看得到..."></textarea>
-      <div style="margin-top:8px"><button class="btn ghost" id="saveNote">保存笔记</button></div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" id="saveNote">保存笔记</button>
+        <button class="btn ghost" id="askNoteBtn">让AI老师检查我的笔记</button>
+      </div>
     </div>
     <div class="card">
       <h2>今日知识点</h2>
@@ -150,30 +264,30 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
   </div>
 
   <div class="card">
+    <h2>今日教程汇总 <span class="tag">AI读正文整理 · 含每日刷题</span></h2>
+    <div class="muted" style="margin-bottom:8px">不用点开原文：AI把抓取正文按知识点讲清楚+要点+练习题，题目都在各节里，答案默认隐藏点按钮才显示；题干可一键当注释导入下面的练习区。有疑问点每节的【问这个知识点】直达AI老师。</div>
+    <div id="digestBox" class="loading">检查中...</div>
+  </div>
+
+  <div class="card">
     <h2>代码练习区 <span class="tag">真实运行Python · 报错原样显示</span></h2>
-    <div class="muted" style="margin-bottom:8px">写完点【运行】——跑的是你电脑上的真Python，traceback和真实环境完全一样。<b>运行后如果程序还要输入，下面会出现输入行，打字回车直接喂给它(不用重新运行)</b>。草稿按天自动保存，刷新不丢。</div>
+    <div class="muted" style="margin-bottom:8px">写完点【运行】——和课堂终端一样：程序显示"请输入…"后，直接在<b>下面的输入行</b>打字回车就能接着跑，边跑边喂不用重开。上面的预填框是可选的(只有想一次性塞好几行输入时才用，平时留空)。草稿按天自动保存，刷新不丢。</div>
     <textarea id="codeIn" rows="13" spellcheck="false" placeholder="# 在这里写今天的作业代码"></textarea>
     <div style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
       <button class="btn good" id="runBtn">▶ 运行</button>
-      <textarea id="stdinIn" rows="2" placeholder="运行前预填输入：每行一个(给 input() 的)。留空也行，运行后在下面的输入行打字回车接着喂。Ctrl+Enter 直接运行"></textarea>
+      <textarea id="stdinIn" rows="2" placeholder="预填输入(可选)：每行一个值，程序一启动自动喂给 input()。平时留空，直接运行后用下面的输入行打字"></textarea>
       <button class="btn ghost" id="clearCode">清空</button>
     </div>
     <div class="warnbox" id="warnBox"></div>
     <div class="liverow" id="liveRow">
       <span class="lbl">⌨ 程序在等你输入：</span>
-      <input id="liveIn" placeholder="输入一行，回车发送给程序(Ctrl+Enter也行)">
+      <textarea id="liveIn" rows="1" spellcheck="false" style="resize:none" placeholder="回车发送；可一次粘贴多行(每行一个值)，程序逐个吃"></textarea>
       <button class="btn" id="liveSend">发送</button>
       <button class="btn ghost" id="liveEof">结束输入</button>
-      <button class="btn ghost" id="liveKill" style="border-color:#7a3a3a;color:#ff9d9d">停止</button>
+      <button class="btn ghost" id="liveKill" style="border-color:var(--bad);color:var(--bad)">停止</button>
     </div>
     <pre id="runOut" class="runout"></pre>
     <div class="hintbox" id="hintBox"></div>
-  </div>
-
-  <div class="card">
-    <h2>今日教程汇总 <span class="tag">AI读完抓取正文替你整理 · 含练习题</span></h2>
-    <div class="muted" style="margin-bottom:8px">不用啃整页原文：AI按知识点分节讲清楚+要点+练习题，练习题可一键载入练习区。有疑问点每节的【问这个知识点】直达AI老师。</div>
-    <div id="digestBox" class="loading">检查中...</div>
   </div>
 
   <div class="card">
@@ -195,23 +309,31 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
   <div class="card"><h2>84天大纲 · 12阶段</h2><div class="muted">点阶段展开，点某天查看详情(所有资源均为实测可访问的教材章节)</div></div>
   <div id="stageList"></div>
   <div class="card" id="detail"><h2>天详情</h2><div class="muted">点上面任意一天</div></div>
+  <div class="card">
+    <h2>番外 · 多语言速览 <span class="tag">看懂就行 · 不占84天</span></h2>
+    <div class="muted" style="margin-bottom:8px">主语言是Python(SQL和C在正课里)。这里给你其他常见语言的"认脸"对照：能读懂别人代码即可，不用会写。看完想深入哪个再说。</div>
+    <div id="polyList" class="loading">加载中...</div>
+  </div>
 </section>
 
 <section class="page" id="p-progress">
   <div class="card"><h2>总览</h2><div class="stats" id="statBox"></div></div>
   <div class="card"><h2>阶段完成度</h2><div id="stageBars"></div></div>
   <div class="card"><h2>84天打卡日历</h2>
-    <div class="muted" style="margin-bottom:8px">灰=未开始 / 蓝=任务部分完成 / 绿=任务全完成(含作业更亮)</div>
+    <div class="muted" style="margin-bottom:8px">灰=未开始 / 蓝=任务部分完成 / 绿=任务全完成 / <b style="color:var(--hwglow)">金色光边=已交作业(更亮)</b></div>
     <div class="cal" id="calBox"></div>
   </div>
 </section>
 
 <section class="page" id="p-resource">
   <div class="card">
-    <h2>明天学这个，确认吗？</h2>
-    <div class="muted">今天收尾时点这里：确认后自动抓取明天教材正文存到本地 resources/，附来源可核对(防AI瞎编)。</div>
+    <h2>明天的资料 <span class="tag">自动存档 · 不用你确认</span></h2>
+    <div class="muted">每天凌晨和服务启动时自动抓取未来计划日的教材正文存到 resources/(附来源可核对)。已抓好的日子这里会自动亮绿。</div>
     <div id="tomorrowInfo" style="margin:10px 0"></div>
-    <button class="btn good" id="fetchBtn">今天学完 → 确认明天学这个 → 抓取配置</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="peekTm">提前看明天的教程汇总</button>
+      <button class="btn ghost" id="fetchBtn" title="正常不用点，自动抓取失效时的后备">手动立即抓取</button>
+    </div>
     <div id="fetchResult" style="margin-top:12px"></div>
   </div>
   <div class="card"><h2>今日资源</h2><div id="resList2"></div></div>
@@ -221,7 +343,8 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 <section class="page" id="p-ai">
   <div class="card">
     <h2>AI老师 <select id="aiModelSel" class="modelsel" title="选择魔搭可用模型(自动拉取列表)"><option>模型列表加载中...</option></select></h2>
-    <div class="muted" style="margin-bottom:8px">基于今天的大纲与作业提问；额度来自魔搭，放开学。答题、讲解、批改都行。</div>
+    <div class="muted" style="margin-bottom:8px">基于今天的大纲与作业提问；额度来自魔搭，放开学。答题、讲解、批改都行。老师有长期记忆，越聊越懂你。</div>
+    <div class="muted" id="profBox" style="display:none;margin-bottom:8px;border-left:3px solid var(--acc);padding-left:8px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="btn ghost" onclick="askAI('explain')">讲解知识点</button>
       <button class="btn ghost" onclick="askAI('quiz')">出3道自测题(问答)</button>
@@ -246,7 +369,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 <div class="toast" id="toast"></div>
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let PLAN=null, TODAY=null, CHAT=JSON.parse(localStorage.getItem('chat')||'[]');
+let PLAN=null, TODAY=null, CHAT=JSON.parse(localStorage.getItem('chat')||'[]'), PROFILE='';
 
 async function api(u,opt){const r=await fetch(u,opt);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
 function post(u,b){return api(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})}
@@ -256,6 +379,20 @@ $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.p)};
 function go(p){$$('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.p===p));$$('.page').forEach(x=>x.classList.toggle('on',x.id==='p-'+p));if(p==='progress')renderProgress();if(p==='resource')renderResource();if(p==='ach')renderAch();if(p==='ai'&&!MODELS_READY)loadModels()}
 
 function toast(msg){const t=$('#toast');t.innerHTML=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',5000)}
+
+// ---------- 皮肤 ----------
+const SKINS=[['','极光蓝紫(默认)'],['deepblue','深蓝'],['inkgreen','墨绿'],['lavender','薰衣草'],['morandi','莫兰迪'],['mono','黑白'],['gold','黑金'],['wine','深红'],['champagne','香槟']];
+function applySkin(v){
+  if(v)document.documentElement.setAttribute('data-theme',v);else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('skin',v);$('#skinSel').value=v;
+}
+function initSkin(){
+  const q=new URLSearchParams(location.search).get('skin');
+  const v=q!==null?q:(localStorage.getItem('skin')||'');
+  $('#skinSel').innerHTML=SKINS.map(s=>`<option value="${s[0]}"${s[0]===v?' selected':''}>🎨 ${s[1]}</option>`).join('');
+  if(v)document.documentElement.setAttribute('data-theme',v);
+  $('#skinSel').onchange=e=>applySkin(e.target.value);
+}
 
 // ---------- 今日 ----------
 function stageOf(d){return PLAN.stages.find(s=>{const[a,b]=s.range.slice(1).split('-').map(Number);return d>=a&&d<=b})}
@@ -297,7 +434,7 @@ function renderToday(){
     : `# D${t.day} 作业：${pd.hw.t}\n# 要求：${pd.hw.d}\n# 写完点下面【运行】，报错会原样显示在下方\n\n`;
   $('#stdinIn').value = localStorage.getItem(ck+'stdin')||'';
   $('#runOut').style.display='none';
-  $('#kpList').innerHTML=pd.kp.map(k=>`<div class="res">· ${k}</div>`).join('');
+  renderKp();
   const resHtml=pd.res.map((r,i)=>{
     const dup=(r.dup_days&&r.dup_days.length)?`<span class="tag" title="同一链接还出现在这些天">也出现于 ${r.dup_days.map(d=>'D'+d).join('、')}</span>`:'';
     return `<div class="res"><a href="${r.u}" target="_blank">${i+1}. ${r.t}</a>${dup?' '+dup:''}<div class="src">来源：${r.src}${(r.dup_days&&r.dup_days.length)?' · 重复资源可略读，看下面教程汇总即可':''}</div></div>`}).join('');
@@ -306,6 +443,11 @@ function renderToday(){
   loadSubs();
 }
 $('#saveNote').onclick=async()=>{try{await post('/api/checkin',{hw_note:$('#hwNote').value});toast('笔记已保存')}catch(e){alert(e.message)}};
+$('#askNoteBtn').onclick=()=>{
+  const n=$('#hwNote').value.trim();
+  if(!n){toast('笔记还是空的，先写两句再让AI看');return}
+  post('/api/checkin',{hw_note:n}).then(()=>{go('ai');return send('这是我的作业笔记：\n'+n+'\n\n请点评：1)思路对不对 2)卡点可能在哪 3)下一步怎么走。')}).catch(e=>alert(e.message));
+};
 
 // ---------- 代码练习(会话式真实运行，可边跑边喂输入) ----------
 const ckNow=()=> 'codeD'+(TODAY?TODAY.day:'x');
@@ -318,10 +460,10 @@ function showRunChunks(chunks,hints){
   const o=$('#runOut');o.style.display='block';
   let h='';
   for(const c of chunks){
-    const col=c.s==='err'?'#ff7b72':'#9fe3a8';
+    const col=c.s==='err'?'var(--out-err)':'var(--out-ok)';
     h+=`<span style="color:${col}">${ansiGray(esc(c.t))}</span>`;
   }
-  o.innerHTML=h||'<span style="color:#98a1b0">(运行中，暂无输出)</span>';
+  o.innerHTML=h||'<span style="color:var(--dim)">(运行中，暂无输出)</span>';
   o.scrollTop=o.scrollHeight;
   const hb=$('#hintBox');
   if(hints&&hints.length){hb.classList.add('on');hb.innerHTML='<b>看不懂这个报错？</b><ul>'+hints.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'}
@@ -345,13 +487,13 @@ async function startRun(){
     if(r.warnings&&r.warnings.length){wb.classList.add('on');wb.innerHTML='<b>⚠ 运行前提醒：</b><br>'+r.warnings.map(x=>'· '+esc(x)).join('<br>')}
     if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
     $('#runOut').style.display='block';
-    $('#runOut').innerHTML='<span style="color:#98a1b0">启动中...</span>';
+    $('#runOut').innerHTML='<span style="color:var(--dim)">启动中...</span>';
     $('#liveRow').classList.add('on');
     $('#liveIn').focus();
     RUN_TIMER=setInterval(pollRun,250);
   }catch(e){
     $('#runOut').style.display='block';
-    $('#runOut').innerHTML=`<span style="color:#ff7b72">${esc(e.message)}</span>`;
+    $('#runOut').innerHTML=`<span style="color:var(--out-err)">${esc(e.message)}</span>`;
     b.disabled=false;b.textContent='▶ 运行';
   }
 }
@@ -364,7 +506,7 @@ async function pollRun(){
     if(!r.running){
       stopRunPoll();
       const o=$('#runOut');
-      if(r.exit!==0&&r.exit!==null)o.innerHTML+=`\n<span style="color:#e0a63c">[退出码 ${r.exit}${r.capped?' · 输出超限已截断':''}]</span>`;
+      if(r.exit!==0&&r.exit!==null)o.innerHTML+=`\n<span style="color:var(--warn)">[退出码 ${r.exit}${r.capped?' · 输出超限已截断':''}]</span>`;
       $('#liveRow').classList.remove('on');
       $('#runBtn').disabled=false;$('#runBtn').textContent='▶ 运行';
       RUN_SID=null;
@@ -372,7 +514,7 @@ async function pollRun(){
   }catch(e){
     // 会话过期/服务重启：收尾，别无限转
     stopRunPoll();
-    if(RUN_SID){$('#runOut').style.display='block';$('#runOut').innerHTML+=`\n<span style="color:#e0a63c">[${esc(e.message)}]</span>`}
+    if(RUN_SID){$('#runOut').style.display='block';$('#runOut').innerHTML+=`\n<span style="color:var(--warn)">[${esc(e.message)}]</span>`}
     $('#liveRow').classList.remove('on');
     $('#runBtn').disabled=false;$('#runBtn').textContent='▶ 运行';
     RUN_SID=null;
@@ -390,29 +532,34 @@ async function sendLive(){
   }catch(e){toast('喂不进去：'+esc(e.message))}
 }
 $('#liveSend').onclick=sendLive;
-$('#liveIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sendLive()}};
+$('#liveIn').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendLive()}};
 $('#liveEof').onclick=async()=>{if(!RUN_SID)return;try{await post('/api/run/'+RUN_SID+'/eof',{});toast('已告诉程序：没有更多输入了')}catch(e){toast(e.message)}};
 $('#liveKill').onclick=async()=>{if(!RUN_SID)return;try{await post('/api/run/'+RUN_SID+'/kill',{});pollRun()}catch(e){toast(e.message)}};
 
-// ---------- 今日教程汇总(AI读抓取正文) ----------
-let DIGEST=null;
-async function loadDigest(){
+// ---------- 今日教程汇总(AI读抓取正文) + 每日刷题 ----------
+let DIGEST=null, DIGEST_DATE=null;
+async function loadDigest(dateStr){
   const box=$('#digestBox');
   if(!TODAY||!TODAY.plan_day){box.innerHTML='<div class="muted">今天不在计划内。</div>';return}
+  DIGEST_DATE=dateStr||TODAY.date;
+  const prev=DIGEST_DATE!==TODAY.date;
+  const banner=prev?`<div class="hintbox on" style="margin-bottom:8px">⏳ 提前预览 D${TODAY.day+1} 明天的汇总 · <a href="javascript:void(0)" onclick="backTodayDigest()">回到今天</a></div>`:'';
   try{
-    const r=await api('/api/digest?date='+TODAY.date);
+    const r=await api('/api/digest?date='+DIGEST_DATE);
     if(r.sections&&r.sections.length){renderDigest(r);return}
-    box.innerHTML=`<div class="muted">还没有生成。AI会读取今天已抓取的教材正文(${TODAY.plan_day.res.length}份资料)，按知识点整理成讲解+要点+练习题(免费魔搭模型，约需半分钟)。</div>
-      <div style="margin-top:10px"><button class="btn" id="dgBtn">✨ 生成今日教程汇总</button></div>`;
+    box.innerHTML=banner+`<div class="muted">还没有生成。AI会读取已抓取的教材正文(${TODAY.plan_day.res.length}份资料)，按知识点整理成讲解+要点+每日刷题(免费魔搭模型，约需半分钟)。</div>
+      <div style="margin-top:10px"><button class="btn" id="dgBtn">✨ 生成${prev?'明天的':'今日'}教程汇总+刷题</button></div>`;
     $('#dgBtn').onclick=genDigest;
   }catch(e){box.innerHTML='<div style="color:var(--bad)">'+esc(e.message)+'</div>'}
 }
+function backTodayDigest(){loadDigest(TODAY.date)}
 async function genDigest(){
   const box=$('#digestBox');const b=$('#dgBtn');
+  const date=DIGEST_DATE||TODAY.date;
   if(b){b.disabled=true;b.textContent='AI读资料中...约半分钟'}
-  box.innerHTML='<div class="loading">AI 正在读取今天抓取的教材正文，按知识点整理中...(约半分钟)</div>';
+  box.innerHTML='<div class="loading">AI 正在读取抓取的教材正文，按知识点整理中...(约半分钟)</div>';
   try{
-    const r=await post('/api/digest',{date:TODAY.date});
+    const r=await post('/api/digest',{date:date});
     renderDigest(r);
     if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
   }catch(e){box.innerHTML='<div style="color:var(--bad)">'+esc(e.message)+'</div><div style="margin-top:8px"><button class="btn" onclick="genDigest()">重试</button></div>'}
@@ -420,33 +567,77 @@ async function genDigest(){
 function renderDigest(r){
   DIGEST=r;
   const box=$('#digestBox');
-  box.innerHTML=(r.note?`<div class="muted" style="margin-bottom:8px">💡 ${esc(r.note)}</div>`:'')
-    +r.sections.map((s,i)=>`
+  const prev=DIGEST_DATE&&TODAY&&DIGEST_DATE!==TODAY.date;
+  const banner=prev?`<div class="hintbox on" style="margin-bottom:8px">⏳ 提前预览 D${TODAY.day+1} 明天的汇总 · <a href="javascript:void(0)" onclick="backTodayDigest()">回到今天</a></div>`:'';
+  let kn=0;
+  const sectionsHtml=r.sections.map((s,i)=>`
     <div class="dsec">
       <h4>${i+1}. ${esc(s.kp)}</h4>
       <div>${esc(s.summary)}</div>
       <ul class="pts">${(s.points||[]).map(p=>'<li>'+esc(p)+'</li>').join('')}</ul>
-      ${(s.exercises||[]).map((ex,j)=>`
+      ${(s.exercises||[]).map((ex,j)=>{kn++;ex._k=kn;return `
         <div class="exer">
-          <details><summary>练习${j+1}：${esc(ex.q)}</summary>
-            <div style="margin-top:6px"><b>参考答案：</b>${esc(ex.a||'')}</div>
-            ${ex.starter?`<div class="starter">${esc(ex.starter)}</div>
-              <div style="margin-top:6px"><button class="btn ghost" onclick="loadStarter(${i},${j})">载入练习区</button></div>`:''}
+          <details><summary>题${kn}：${esc(ex.q)} <span class="muted">(${esc(s.kp)})</span></summary>
+            <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn ghost" onclick="toggleAns(this)">👁 显示参考答案</button>
+              <button class="btn ghost" onclick="importQ(${i},${j})">📥 题干当注释导入练习区</button>
+              ${ex.starter?`<button class="btn ghost" onclick="loadStarter(${i},${j})">▶ 载入练习区开写</button>`:''}
+              <button class="btn ghost" onclick="askExercise(${i},${j})">这题不会，问AI</button>
+            </div>
+            <div style="display:none;margin-top:6px"><b>参考答案：</b>${esc(ex.a||'')}</div>
+            ${ex.starter?`<div class="starter">${esc(ex.starter)}</div>`:''}
           </details>
-        </div>`).join('')}
+        </div>`}).join('')}
       <div style="margin-top:8px"><button class="btn ghost" onclick="askKp(${i})">问这个知识点 →</button></div>
-    </div>`).join('')
+    </div>`).join('');
+  box.innerHTML=banner+(r.note?`<div class="muted" style="margin-bottom:8px">💡 ${esc(r.note)}</div>`:'')
+    +(kn?`<div class="muted" style="margin-bottom:8px">共 <b>${kn}</b> 道练习题(藏在各节里) · 点开题干 → 想先自己做就只看题，卡住了再点【显示参考答案】</div>`:'')
+    +sectionsHtml
     +(r._meta?`<div class="muted">来源：${esc(r._meta.source_file||'')} · ${esc(r._meta.generated||'')}</div>`:'');
   const again=document.createElement('div');
   again.style.marginTop='10px';
   again.innerHTML='<button class="btn ghost" id="dgAgain">重新生成</button>';
   box.appendChild(again);
   $('#dgAgain').onclick=()=>genDigest();
+  if(!prev){renderKp()}
+}
+function toggleAns(btn){
+  const box=btn.nextElementSibling;
+  const show=box.style.display==='none';
+  box.style.display=show?'block':'none';
+  btn.textContent=show?'🙈 隐藏参考答案':'👁 显示参考答案';
+}
+function importQ(i,j){
+  const s=DIGEST&&DIGEST.sections[i];if(!s)return;
+  const ex=(s.exercises||[])[j];if(!ex)return;
+  const blk=`# ▶ 题${ex._k||''}导入（知识点：${s.kp}）\n# ${ex.q}\n# 卡住可点题旁【显示参考答案】或【载入练习区开写】\n# ▶ END`;
+  let v=$('#codeIn').value;
+  v=v.replace(/# ▶ 题\d*导入[\s\S]*?# ▶ END\n?/,'');
+  $('#codeIn').value=blk+'\n'+v;
+  localStorage.setItem(ckNow(),$('#codeIn').value);
+  $('#codeIn').scrollIntoView({behavior:'smooth'});$('#codeIn').focus();
+  toast('题干已作为注释导入练习区(原草稿保留在下面)');
+}
+function renderKp(){
+  const pd=TODAY&&TODAY.plan_day;if(!pd)return;
+  const secs=(DIGEST&&DIGEST_DATE===TODAY.date&&DIGEST.sections)?DIGEST.sections:[];
+  $('#kpList').innerHTML=pd.kp.map((k,i)=>{
+    const s=secs[i];
+    return `<div class="res">· ${esc(k)}${s&&s.summary?`<div class="src">AI提取：${esc(s.summary.length>90?s.summary.slice(0,90)+'…':s.summary)}</div>`:''}</div>`;
+  }).join('');
+}
+function askExercise(i,j){
+  const s=DIGEST&&DIGEST.sections[i];if(!s)return;
+  const ex=(s.exercises||[])[j];if(!ex)return;
+  go('ai');
+  $('#chatIn').value=`题「${ex.q}」我不会做，先给我一点起手思路(别直接给完整答案)。`;
+  $('#chatIn').focus();
 }
 function loadStarter(i,j){
   const st=DIGEST&&DIGEST.sections[i]&&DIGEST.sections[i].exercises[j]?DIGEST.sections[i].exercises[j].starter:'';
   if(!st)return;
-  $('#codeIn').value=st+'\n';localStorage.setItem(ckNow(),$('#codeIn').value);
+  const m=$('#codeIn').value.match(/# ▶ 题\d*导入[\s\S]*?# ▶ END\n?/);
+  $('#codeIn').value=(m?m[0]:'')+st+'\n';localStorage.setItem(ckNow(),$('#codeIn').value);
   $('#codeIn').scrollIntoView({behavior:'smooth'});$('#codeIn').focus();
   toast('练习题已载入练习区，改一改点【运行】');
 }
@@ -524,6 +715,20 @@ function renderOutline(){
   });
 }
 let _stateCache=null;
+async function loadPoly(){
+  try{
+    const r=await fetch('static/polyglot.json').then(x=>x.json());
+    $('#polyList').innerHTML=r.map(p=>`
+      <details class="exer" style="margin-bottom:8px"><summary><b>${esc(p.lang)}</b> — ${esc(p.tagline)}</summary>
+      <div style="margin-top:8px">
+        <b>和Python对照：</b>
+        <div class="starter" style="white-space:pre-wrap">${(p.vs_py||[]).map(v=>'# '+v.note+'\n'+v.py+'\n  ↓ '+v.code).join('\n\n')}</div>
+        <div style="margin-top:8px"><b>看懂清单：</b><ul class="pts">${(p.read_check||[]).map(c=>'<li>'+esc(c)+'</li>').join('')}</ul></div>
+        <div class="starter" style="margin-top:6px">${esc(p.example||'')}</div>
+        <div class="muted" style="margin-top:6px">💡 ${esc(p.when||'')}</div>
+      </div></details>`).join('');
+  }catch(e){$('#polyList').textContent='加载失败:'+e.message}
+}
 async function markDays(){
   try{if(!_stateCache)_stateCache=(await api('/api/state')).state;
     for(let n=1;n<=84;n++){const d=PLAN.days[n-1],e=_stateCache.checkins[d.date]||{tasks:[]};
@@ -559,8 +764,8 @@ async function renderProgress(){
   let html='';
   for(let n=1;n<=84;n++){const d=PLAN.days[n-1],e=s.state.checkins[d.date]||{tasks:[],hw:false};
     const done=(e.tasks||[]).filter(Boolean).length;
-    const cls=done===3?'full':(done>0?'partial':'');
-    html+=`<div class="d ${cls}" title="D${n} ${d.title} 任务${done}/3${e.hw?' +作业':''}" onclick="showDay(${n});go('outline')">${n}</div>`}
+    const cls=(done===3?'full':(done>0?'partial':''))+(e.hw?' hw':'');
+    html+=`<div class="d ${cls}" title="D${n} ${d.title} 任务${done}/3${e.hw?' ✔已交作业':''}" onclick="showDay(${n});go('outline')">${n}</div>`}
   $('#calBox').innerHTML=html;
   const tIdx=PLAN.days.findIndex(d=>d.date===TODAY.date);
   if(tIdx>=0)$$('#calBox .d')[tIdx].classList.add('today');
@@ -572,22 +777,29 @@ async function renderResource(){
   const tm=TODAY.tomorrow;
   $('#tomorrowInfo').innerHTML=tm?`<b>D${tm.day} ${tm.title}</b><div class="muted">知识点：${tm.kp.join(' · ')}</div>
     <div class="muted">资源${tm.res.length}条：${tm.res.map(r=>r.src).filter((v,i,a)=>a.indexOf(v)===i).join(' / ')}</div>
-    ${TODAY.tomorrow_fetched?'<div style="color:var(--ok)">今天已抓取过，可重复抓取覆盖。</div>':''}`
+    ${TODAY.tomorrow_fetched?'<div style="color:var(--ok)">✔ 明天的资料已自动存档</div>':'<div style="color:var(--warn)">…明天资料待抓取(每天00:05自动，或点手动)</div>'}
+    ${TODAY.tomorrow_digest?'<div style="color:var(--ok)">✔ 明天的教程汇总已可提前看</div>':''}`
     :'<div class="muted">已是最后一天。</div>';
   $('#fetchBtn').disabled=!tm;
   try{const fs=await api('/api/resources');
-    $('#fileList').innerHTML=fs.length?fs.map(f=>`<div class="fileitem"><span>${f.name}</span><span class="muted">${(f.size/1024).toFixed(1)}KB · ${f.mtime}</span></div>`).join(''):'<div class="muted">还没有存档，点上面按钮生成。</div>';
+    $('#fileList').innerHTML=fs.length?fs.map(f=>`<div class="fileitem"><span>${f.name}</span><span class="muted">${(f.size/1024).toFixed(1)}KB · ${f.mtime}</span></div>`).join(''):'<div class="muted">还没有存档，等自动抓取或点手动。</div>';
   }catch(e){$('#fileList').textContent=e.message}
 }
+$('#peekTm').onclick=async()=>{
+  const tm=TODAY&&TODAY.tomorrow;
+  if(!tm){toast('已是最后一天');return}
+  if(!TODAY.tomorrow_digest){toast('明天的汇总还没生成——等资料自动抓完(或点手动)后再来');return}
+  go('today');DIGEST_DATE=tm.date;await loadDigest(tm.date);
+};
 $('#fetchBtn').onclick=async()=>{
-  const b=$('#fetchBtn');b.disabled=true;b.textContent='抓取中...';
+  const b=$('#fetchBtn');b.disabled=true;b.textContent='手动抓取中...';
   try{const r=await post('/api/fetch-next',{});
     $('#fetchResult').innerHTML=`<div class="muted">已存 resources/${r.file}</div>`+
       r.items.map(i=>`<div class="res">${i.status===200?'✔':'✖'} <a href="${i.url}" target="_blank">${i.title}</a>
         <span class="src">HTTP ${i.status} · ${i.chars}字 · ${i.src}</span>${i.error?'<div class="src">'+i.error+'</div>':''}</div>`).join('');
-    renderResource();
+    TODAY=await api('/api/today');renderResource();
   }catch(e){$('#fetchResult').innerHTML='<div style="color:var(--bad)">'+e.message+'</div>'}
-  b.disabled=false;b.textContent='今天学完 → 确认明天学这个 → 抓取配置';
+  b.disabled=false;b.textContent='手动立即抓取';
 };
 
 // ---------- AI老师 ----------
@@ -609,8 +821,9 @@ $('#aiModelSel').onchange=async e=>{
 function sysPrompt(){
   if(!TODAY||!TODAY.plan_day)return'你是学习台AI老师，中文回答。';
   const p=TODAY.plan_day;
+  const note=(TODAY.entry&&TODAY.entry.hw_note)?`\n学生今天的作业笔记(先点评他的思路、卡点，再回答)：\n${TODAY.entry.hw_note}`:'';
   return`你是学习台的AI老师。今天是D${TODAY.day}《${p.title}》，知识点：${p.kp.join('、')}。
-作业【${p.hw.t}】：${p.hw.d}（期望：${p.hw.e}）。
+作业【${p.hw.t}】：${p.hw.d}（期望：${p.hw.e}）。${note}
 原则：1)中文，教学优先，引导学生自己写代码而不是直接甩完整答案；2)要代码示例时短小可直接运行；
 3)不编造教材内容，涉及学习资料以学生给的链接为准；4)学生贴代码时先指出问题再给改法。`;
 }
@@ -619,7 +832,16 @@ function renderChat(){
   $('#chatBox').scrollTop=1e9;localStorage.setItem('chat',JSON.stringify(CHAT.slice(-40)));
 }
 function esc(s){return(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
-function clearChat(){CHAT=[];renderChat()}
+function renderProfile(){
+  const b=$('#profBox');
+  if(!PROFILE){b.style.display='none';b.innerHTML='';return}
+  b.style.display='block';
+  b.innerHTML='🧠 老师对你的记忆(每10轮自动更新)：'+esc(PROFILE);
+}
+function clearChat(){
+  CHAT=[];renderChat();
+  post('/api/chat/clear',{}).then(()=>{PROFILE='';renderProfile()}).catch(()=>{});
+}
 async function send(text){
   if(!text.trim())return;
   CHAT.push({role:'user',content:text});renderChat();$('#chatIn').value='';
@@ -657,9 +879,16 @@ async function renderAch(){
 // ---------- 启动 ----------
 (async function(){
   try{
+    initSkin();
     PLAN=await api('/api/plan');TODAY=await api('/api/today');
-    renderToday();renderOutline();renderChat();loadModels();
-  }catch(e){document.body.insertAdjacentHTML('afterbegin','<div class="card" style="margin:12px;color:#ffb3b3">加载失败：'+e.message+'，请确认 app.py 正在运行</div>')}
+    try{
+      const h=await api('/api/chat');
+      if(h.messages&&h.messages.length)CHAT=h.messages;
+      PROFILE=h.profile||'';
+    }catch(e){}
+    renderToday();renderOutline();loadPoly();renderChat();renderProfile();loadModels();
+    const h=location.hash.replace(/^#/,'');if(h)go(h);
+  }catch(e){document.body.insertAdjacentHTML('afterbegin','<div class="card" style="margin:12px;color:var(--bad)">加载失败：'+e.message+'，请确认 app.py 正在运行</div>')}
 })();
 </script>
 </body>

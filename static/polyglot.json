@@ -1,0 +1,172 @@
+[
+ {
+  "lang": "Java",
+  "tagline": "企业级后端开发的绝对主力，招聘后端岗最多的语言，适合做大型系统、安卓和微服务。",
+  "vs_py": [
+   {
+    "py": "print(\"hello\")",
+    "code": "System.out.println(\"hello\");",
+    "note": "Java每句话结尾要加分号，打印是方法调用不是语句。"
+   },
+   {
+    "py": "x = 10",
+    "code": "int x = 10;",
+    "note": "Java变量必须声明类型，不能随便换类型。"
+   },
+   {
+    "py": "def add(a, b):\n    return a + b",
+    "code": "public int add(int a, int b) {\n    return a + b;\n}",
+    "note": "Java方法要写访问修饰符和返回类型，代码块用大括号。"
+   },
+   {
+    "py": "for i in range(5):\n    print(i)",
+    "code": "for (int i = 0; i < 5; i++) {\n    System.out.println(i);\n}",
+    "note": "Java的for循环像C，要手动写初始值、条件和自增。"
+   }
+  ],
+  "read_check": [
+   "看到 public static void main(String[] args) 代表程序入口，从这里开始执行。",
+   "看到 class 开头的大括号块代表一个类，Java代码必须写在类里面。",
+   "看到 private / public 代表访问权限，控制谁能用这个变量或方法。",
+   "看到 new 代表创建对象，比如 new ArrayList<>() 就是造一个新列表。"
+  ],
+  "example": "// 定义一个简单的Java类\npublic class Hello {\n    // 程序入口，固定写法\n    public static void main(String[] args) {\n        // 声明一个字符串变量\n        String name = \"小明\";\n        // 打印拼接后的内容\n        System.out.println(\"你好, \" + name);\n        // 循环打印数字\n        for (int i = 1; i <= 3; i++) {\n            System.out.println(\"第\" + i + \"次\");\n        }\n    }\n}",
+  "when": "想投后端开发岗、进大厂或做安卓，就值得深入学它。"
+ },
+ {
+  "lang": "JavaScript",
+  "tagline": "网页的母语，前端必会；也靠Node.js跑后端和脚本。",
+  "vs_py": [
+   {
+    "py": "print(\"hi\")",
+    "code": "console.log(\"hi\")",
+    "note": "输出用console.log，不是print。"
+   },
+   {
+    "py": "x = 1",
+    "code": "let x = 1;",
+    "note": "变量要声明，let可变、const不可变，结尾分号可省但建议写。"
+   },
+   {
+    "py": "def add(a, b):\n    return a + b",
+    "code": "function add(a, b) {\n    return a + b;\n}",
+    "note": "函数用function关键字，代码块用大括号而不是缩进。"
+   },
+   {
+    "py": "for i in range(3):\n    print(i)",
+    "code": "for (let i = 0; i < 3; i++) {\n    console.log(i);\n}",
+    "note": "经典for循环要写初始化、条件、自增三段。"
+   }
+  ],
+  "read_check": [
+   "看到const/let代表声明变量，const是常量。",
+   "看到=>代表箭头函数，相当于简写的匿名函数。",
+   "看到===代表严格相等，比==更安全，推荐用它。",
+   "看到async/await代表异步操作，等Promise结果，类似同步写法。"
+  ],
+  "example": "// 定义一个对象（类似Python的dict）\nconst user = { name: \"小明\", age: 18 };\n\n// 箭头函数，接收一个用户并返回问候语\nconst greet = (u) => `你好，${u.name}！`;\n\n// 数组方法链式调用，类似Python的列表推导\nconst nums = [1, 2, 3, 4];\nconst doubled = nums.map(n => n * 2);\n\nconsole.log(greet(user));      // 你好，小明！\nconsole.log(doubled);          // [2, 4, 6, 8]",
+  "when": "想做网页交互、前端开发或全栈时，值得深入学它。"
+ },
+ {
+  "lang": "Go",
+  "tagline": "云原生和命令行新贵，语法极简，适合写高并发服务、CLI工具和基础设施。",
+  "vs_py": [
+   {
+    "py": "def add(a, b):\n    return a + b",
+    "code": "func add(a, b int) int {\n    return a + b\n}",
+    "note": "Go必须写参数和返回值类型，函数用func关键字。"
+   },
+   {
+    "py": "for i in range(5):\n    print(i)",
+    "code": "for i := 0; i < 5; i++ {\n    fmt.Println(i)\n}",
+    "note": "Go只有for一种循环，没有while，:=是声明并赋值。"
+   },
+   {
+    "py": "x = 10\nif x > 5:\n    print('big')",
+    "code": "x := 10\nif x > 5 {\n    fmt.Println(\"big\")\n}",
+    "note": "Go的if条件不用括号，但花括号必须和if同行。"
+   },
+   {
+    "py": "try:\n    f = open('a.txt')\nexcept Exception as e:\n    print(e)",
+    "code": "f, err := os.Open(\"a.txt\")\nif err != nil {\n    fmt.Println(err)\n}",
+    "note": "Go没有异常，错误是普通返回值，必须显式检查err。"
+   }
+  ],
+  "read_check": [
+   "看到func开头，代表定义函数或方法。",
+   "看到:=，代表声明并赋值一个新变量，类型自动推断。",
+   "看到if err != nil，代表在检查上一步操作的错误。",
+   "看到go关键字，代表启动一个并发协程（goroutine）。"
+  ],
+  "example": "package main\n\nimport \"fmt\"\n\nfunc main() {\n    // 声明一个字符串切片\n    names := []string{\"Alice\", \"Bob\"}\n    for _, name := range names {\n        // _ 忽略索引，name是当前元素\n        fmt.Println(\"Hello,\", name)\n    }\n}",
+  "when": "想写高性能网络服务、云原生工具或单文件可执行CLI时，值得深入它。"
+ },
+ {
+  "lang": "C++",
+  "tagline": "跑得飞快的底层性能怪，适合游戏引擎、算法竞赛、操作系统等对速度要求极高的场景。",
+  "vs_py": [
+   {
+    "py": "print(\"hello\")",
+    "code": "std::cout << \"hello\" << std::endl;",
+    "note": "输出用流对象cout，<<像箭头把内容推进屏幕。"
+   },
+   {
+    "py": "x = 10",
+    "code": "int x = 10;",
+    "note": "变量必须先声明类型，编译器要知道它占多少内存。"
+   },
+   {
+    "py": "for i in range(5):",
+    "code": "for (int i = 0; i < 5; i++) {",
+    "note": "for循环要手写初始化、条件、自增三段，用大括号包住循环体。"
+   },
+   {
+    "py": "def add(a, b): return a + b",
+    "code": "int add(int a, int b) { return a + b; }",
+    "note": "函数要写明返回类型和参数类型，结尾加分号。"
+   }
+  ],
+  "read_check": [
+   "看到 #include <...> 代表引入标准库头文件，类似Python的import。",
+   "看到 int/float/char 等词在变量前，代表声明变量类型，Python里不用写。",
+   "看到 { } 代表代码块范围，相当于Python靠缩进表达的层级。",
+   "看到 -> 或 :: 代表访问成员或命名空间，类似Python的 . 点号。"
+  ],
+  "example": "#include <iostream>  // 引入输入输出库\n\nint main() {  // 程序入口，类似Python的if __name__ == '__main__'\n    int n = 5;  // 声明一个整数变量\n    int sum = 0;\n    for (int i = 1; i <= n; i++) {  // 从1加到n\n        sum += i;\n    }\n    std::cout << \"1到\" << n << \"的和是\" << sum << std::endl;  // 输出结果\n    return 0;  // 返回0表示程序正常结束\n}",
+  "when": "当你要写游戏、做竞赛题或需要榨干硬件性能时，就值得深入它。"
+ },
+ {
+  "lang": "Shell",
+  "tagline": "运维和自动化脚本的Linux世界通行语，适合批量处理文件、定时任务、部署和管道串联命令。",
+  "vs_py": [
+   {
+    "py": "print(\"hello\")",
+    "code": "echo \"hello\"",
+    "note": "输出用echo，字符串可加可不加引号，但加引号更安全。"
+   },
+   {
+    "py": "x = 1",
+    "code": "x=1",
+    "note": "赋值等号两边不能有空格，这是Shell最容易踩的坑。"
+   },
+   {
+    "py": "if x == 1:",
+    "code": "if [ \"$x\" -eq 1 ]; then",
+    "note": "条件用方括号，数字比较用-eq，字符串比较用=，结尾要then。"
+   },
+   {
+    "py": "for i in range(3):",
+    "code": "for i in 1 2 3; do",
+    "note": "for循环直接列值或通配符，循环体以do开始、done结束。"
+   }
+  ],
+  "read_check": [
+   "看到$开头代表取变量值，如$HOME、$1是第一个参数。",
+   "看到|代表管道，把前一个命令的输出交给后一个命令处理。",
+   "看到>或>>代表重定向，>覆盖写入文件，>>追加写入文件。",
+   "看到$(...)或反引号代表命令替换，把命令执行结果当值用。"
+  ],
+  "example": "#!/bin/bash\n# 统计当前目录下.py文件的行数\ncount=0\nfor f in *.py; do\n  if [ -f \"$f\" ]; then\n    lines=$(wc -l < \"$f\")\n    count=$((count + lines))\n    echo \"$f: $lines 行\"\n  fi\ndone\necho \"总行数: $count\"",
+  "when": "当你需要写部署脚本、定时任务、日志清理或把一堆Linux命令串起来自动跑时，就值得深入它。"
+ }
+]

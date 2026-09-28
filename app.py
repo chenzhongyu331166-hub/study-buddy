@@ -255,7 +255,11 @@ def api_today():
         resp["digest_ready"] = _digest_path(now).exists()
     if n and n < TOTAL:
         resp["tomorrow"] = DAYS[n + 1]
-        resp["tomorrow_fetched"] = now in st.get("fetch", {})
+        # today_fetched: 今天的资料(昨天当"明天"抓的)；tomorrow_fetched: 明天的资料已备好
+        resp["today_fetched"] = now in st.get("fetch", {})
+        tm_date = DAYS[n + 1]["date"]
+        resp["tomorrow_fetched"] = tm_date in st.get("fetch", {})
+        resp["tomorrow_digest"] = _digest_path(tm_date).exists()
     save_state(st)  # 初始化今天的空条目
     return jsonify(resp)
 
@@ -300,6 +304,73 @@ import html as html_mod
 import requests as req
 
 _AI_CACHE = {}   # base, key, ids, cfg_model, ts —— key只在内存，绝不写入state/GitHub
+
+# 老师的长期记忆：对话历史 + 学生画像(data/ 目录，不入Git)
+CHAT_PATH = ROOT / "data" / "chat.json"
+PROFILE_PATH = ROOT / "data" / "profile.json"
+CHAT_CAP = 400
+
+
+def load_chat_history():
+    try:
+        d = json.loads(CHAT_PATH.read_text(encoding="utf-8"))
+        return d.get("messages", [])
+    except Exception:
+        return []
+
+
+def save_chat_history(msgs):
+    try:
+        CHAT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = CHAT_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"messages": msgs[-CHAT_CAP:]}, ensure_ascii=False, indent=1),
+                       encoding="utf-8")
+        tmp.replace(CHAT_PATH)
+    except Exception:
+        pass
+
+
+def load_profile():
+    try:
+        return PROFILE_PATH.read_text(encoding="utf-8").strip()
+    except Exception:
+        return ""
+
+
+def _profile_refresh_async(chat_msgs):
+    """每积累若干轮对话，让AI把学生画像(掌握/薄弱/偏好/建议)更新一次。"""
+    def _worker():
+        try:
+            convo = "\n".join(f"{m['role']}: {m['content'][:500]}" for m in chat_msgs[-24:])
+            cur = load_profile()
+            sys_p = ("你是学生的学习档案员，根据最近对话更新「学生画像」，"
+                     "供后续定制个性化学习方案。输出纯文本≤350字，分四行："
+                     "已掌握 / 薄弱点 / 学习偏好 / 下一步建议。不要客套，不要markdown标题。")
+            u = (f"现有画像：\n{cur or '(空)'}\n\n最近对话：\n{convo}\n\n请输出更新后的画像。")
+            out, _ = ai_chat([{"role": "user", "content": u}], system=sys_p,
+                             temperature=0.3, max_tokens=600)
+            PROFILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            PROFILE_PATH.write_text(out.strip(), encoding="utf-8")
+        except Exception:
+            pass
+    threading.Thread(target=_worker, daemon=True).start()
+
+
+@app.route("/api/chat")
+def api_chat_get():
+    msgs = load_chat_history()
+    return jsonify({"messages": msgs[-60:], "profile": load_profile()})
+
+
+@app.route("/api/chat/clear", methods=["POST"])
+def api_chat_clear():
+    with _LOCK:
+        save_chat_history([])
+        try:
+            PROFILE_PATH.unlink(missing_ok=True)
+        except Exception:
+            pass
+    return jsonify({"ok": True})
 
 AI_PREFER = ["Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3.5-122B-A10B",
              "deepseek-ai/DeepSeek-V4-Pro", "MiniMax/MiniMax-M1-80k"]
@@ -378,15 +449,27 @@ def api_ai():
         if not isinstance(m, dict) or m.get("role") not in ("user", "assistant"):
             return jsonify({"error": "消息格式错误"}), 400
     try:
+        system = body.get("system")
+        prof = load_profile()
+        if prof:
+            system = (system or "") + "\n\n【学生画像·长期记忆】(用于个性化教学，结合今天内容回应)：\n" + prof
         reply, usage = ai_chat(
             messages,
-            system=body.get("system"),
+            system=system,
             temperature=float(body.get("temperature", 0.7)),
             max_tokens=int(body.get("max_tokens", 2048)),
             thinking=bool(body.get("thinking", False)),
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+    # 落到老师的长期记忆：只存这轮的增量(最后一条user + 本轮reply)
+    hist = load_chat_history()
+    last_user = next((m.get("content", "") for m in reversed(messages) if m["role"] == "user"), "")
+    hist = hist + [{"role": "user", "content": last_user},
+                   {"role": "assistant", "content": reply}]
+    save_chat_history(hist)
+    if sum(1 for m in hist if m["role"] == "assistant") % 10 == 0:
+        _profile_refresh_async(hist)
     with _LOCK:
         st = get_state()
         ai = st.setdefault("ai", {"count": 0, "log": []})
@@ -410,10 +493,16 @@ RUN_KEEP = 300           # 进程退出后再保留结果的秒数
 _RUNS = {}
 _RUN_LOCK = threading.Lock()
 
-SITECUSTOMIZE = '''# study-buddy: 把 input() 的提示染成灰色(ANSI 90)，输出本身不受影响
+SITECUSTOMIZE = '''# study-buddy: input提示染灰 + 终端式回显(输入值+换行，和真Python交互一致)
 import builtins as _b
 import sys as _s
 _orig_input = _b.input
+def _echo(val):
+    try:
+        _s.stdout.write(str(val) + "\\n")
+        _s.stdout.flush()
+    except Exception:
+        pass
 def _gray_input(*_a, **_kw):
     if len(_a) > 1 or _kw:
         # 多参数：透传给原生 input，让真正的 TypeError 原样报出来
@@ -425,8 +514,9 @@ def _gray_input(*_a, **_kw):
             _s.stdout.flush()
         except Exception:
             pass
-        return _orig_input()
-    return _orig_input()
+    val = _orig_input()
+    _echo(val)
+    return val
 _b.input = _gray_input
 '''
 
@@ -510,9 +600,13 @@ def _hints_for(text):
 
 
 def _pump(stream, tag, sess, dec):
+    # read1: 管道上有多少字节就返回多少(一次系统调用)。
+    # 用 read(4096) 会死等凑满4096字节，导致程序的提示语卡在读取线程里
+    # 不显示——之前"运行中暂无输出"的根因。
+    reader = getattr(stream, "read1", stream.read)
     try:
         while True:
-            data = stream.read(4096)
+            data = reader(4096)
             if not data:
                 break
             text = dec.decode(data)
@@ -615,10 +709,11 @@ def api_run():
     f.write_text(code, encoding="utf-8")
 
     env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1",
+           "PYTHONUNBUFFERED": "1",
            "PYTHONPATH": str(RUN_DIR) + os.pathsep + os.environ.get("PYTHONPATH", "")}
     try:
         p = subprocess.Popen(
-            [sys.executable, "-X", "utf8", str(f)],
+            [sys.executable, "-u", "-X", "utf8", str(f)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             cwd=str(RUN_DIR), env=env)
     except Exception as e:
@@ -884,9 +979,11 @@ def api_digest_generate():
         '"starter":"#可直接载入练习区的起手代码(可空字符串)"}]}],'
         '"note":"一句话学习建议"}\n'
         "要求：sections 与学生当天知识点一一对应(按给定顺序)；"
-        "每个 section 给 1-2 道练习题，题目要能用当天抓取正文里的知识解决，"
+        "exercises 是「每日刷题」的核心：每节 2-3 道、全天合计至少 5 道，"
+        "题型以动手写代码为主(给starter起手代码)，题目必须覆盖当天全部知识点、难度阶梯(基础→应用→边界)，"
+        "题目要能用当天抓取正文里的知识解决；"
         "starter 必须是能直接放进编辑器运行的 Python 片段(没有合适题时给空串)；"
-        "语言全中文；总长控制在1500字以内。"
+        "语言全中文；总长控制在2200字以内。"
     )
     user = (f"D{n}《{pd['title']}》\n当天知识点：{'、'.join(pd['kp'])}\n"
             f"作业：{pd['hw']['t']}——{pd['hw']['d']}\n\n"
@@ -896,7 +993,7 @@ def api_digest_generate():
         try:
             reply, _u = ai_chat([{"role": "user", "content": user}],
                                 system=system, temperature=temp,
-                                max_tokens=4000, thinking=True)
+                                max_tokens=5000, thinking=True)
             data = _extract_json(reply)
             if not isinstance(data.get("sections"), list) or not data["sections"]:
                 raise ValueError("sections为空")
@@ -958,7 +1055,10 @@ def api_model():
     return jsonify({"current": model})
 
 
-# ---------- 明天的资源：确认后抓取存档 ----------
+# ---------- 明天的资源：自动抓取存档(每天自动，无需确认) ----------
+_FETCH_LOCK = threading.Lock()
+
+
 def extract_text(html, limit=6000):
     html = re.sub(r"(?is)<(script|style|noscript).*?</\1>", " ", html)
     html = re.sub(r"(?s)<!--.*?-->", " ", html)
@@ -970,17 +1070,8 @@ def extract_text(html, limit=6000):
     return text[:limit]
 
 
-@app.route("/api/fetch-next", methods=["POST"])
-def api_fetch_next():
-    body = request.get_json(force=True, silent=True) or {}
-    if body.get("date"):
-        date_str = body["date"]
-        n = day_index(date_str)
-    else:
-        n = day_index(datetime.date.today().isoformat()) + 1
-        date_str = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
-    if n is None or n > TOTAL:
-        return jsonify({"error": "没有更晚的计划日了(已到D84)"}), 400
+def do_fetch(n, date_str):
+    """抓某计划日的全部资源正文，写 resources/Dn_date.md 并记入state。返回items。"""
     plan_day = DAYS[n]
     RES_DIR.mkdir(parents=True, exist_ok=True)
     items = []
@@ -1016,6 +1107,61 @@ def api_fetch_next():
             "fail": sum(1 for x in items if x["status"] != 200),
         }
         save_state(st)
+    return out, items
+
+
+def _auto_fetch_once():
+    """明天(或下一个还没抓的计划日)的资料没备好就自动抓。"""
+    today = datetime.date.today()
+    target = None
+    for off in range(1, 6):   # 未来5天里第一个在计划内且没抓过的
+        d = today + datetime.timedelta(days=off)
+        n = day_index(d.isoformat())
+        if n and n <= TOTAL:
+            key = d.isoformat()
+            md = RES_DIR / f"D{n}_{key}.md"
+            with _LOCK:
+                fetched = key in get_state().get("fetch", {})
+            if not fetched and not md.exists():
+                target = (n, key)
+                break
+    if not target:
+        return None
+    if not _FETCH_LOCK.acquire(blocking=False):
+        return None
+    try:
+        return do_fetch(*target)
+    finally:
+        _FETCH_LOCK.release()
+
+
+def _auto_fetch_loop():
+    time.sleep(25)  # 让服务器先把端口/状态热好
+    while True:
+        try:
+            _auto_fetch_once()
+        except Exception:
+            pass
+        time.sleep(300)
+
+
+@app.route("/api/fetch-next", methods=["POST"])
+def api_fetch_next():
+    body = request.get_json(force=True, silent=True) or {}
+    if body.get("date"):
+        date_str = body["date"]
+        n = day_index(date_str)
+    else:
+        n = day_index(datetime.date.today().isoformat()) + 1
+        date_str = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+    if n is None or n > TOTAL:
+        return jsonify({"error": "没有更晚的计划日了(已到D84)"}), 400
+    if not _FETCH_LOCK.acquire(blocking=False):
+        return jsonify({"error": "正在抓取中，稍等"}), 409
+    try:
+        out, items = do_fetch(n, date_str)
+    finally:
+        _FETCH_LOCK.release()
     return jsonify({"day": n, "file": out.name, "items": items})
 
 
@@ -1046,6 +1192,7 @@ def _500(e):
 if __name__ == "__main__":
     print("StudyBuddy -> http://127.0.0.1:5000")
     import time
+    threading.Thread(target=_auto_fetch_loop, daemon=True).start()  # 明天资料自动抓取
     for attempt in range(6):
         try:
             app.run(host="127.0.0.1", port=5000, debug=False, threaded=True)
