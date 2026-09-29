@@ -105,10 +105,27 @@ def day_index(plan, date_str):
     return n if 1 <= n <= plan["meta"]["total_days"] else None
 
 
+def _first_undone(plan, st):
+    """第一个任务没全勾的计划日(缺勤顺延，与app.py保持一致)"""
+    for d in sorted(plan["days"], key=lambda x: x["day"]):
+        e = st.get("checkins", {}).get(d["date"], {})
+        if not e or not all(e.get("tasks", [])):
+            return d
+    return None
+
+
+def _default_date(plan, st):
+    """默认学习日：不超前于自然日(7点规则)，可因缺勤滞后(缺哪天压到今天)"""
+    today = _study_today().isoformat()
+    fu = _first_undone(plan, st)
+    return min(fu["date"], today) if fu else today
+
+
 class Reminder:
     def __init__(self):
         self.plan = load_json(PLAN_PATH, None)
-        self.today = _study_today().isoformat()
+        _st = load_json(STATE_PATH, {"checkins": {}})
+        self.today = _default_date(self.plan, _st) if self.plan else _study_today().isoformat()
         self.n = day_index(self.plan, self.today) if self.plan else None
         self.pd = None
         if self.n:

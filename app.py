@@ -101,6 +101,25 @@ def day_entry(st, date_str):
     )
 
 
+def first_undone_day(st):
+    """当前该学第几天：第一个任务没全勾的计划日。
+    缺勤规则(2026.9.29)：哪天没打卡，那天的课自动往后压——次日打开仍是它，
+    不跳到下一天；补完才推进。84天任务全完成返回 None。"""
+    for n in range(1, TOTAL + 1):
+        e = st["checkins"].get(DAYS[n]["date"], {})
+        if not e or not all(e.get("tasks", [])):
+            return n
+    return None
+
+
+def default_study_date(st):
+    """默认学习日：不超前于自然日(7点规则，凌晨写作业不跳天)，
+    但可因缺勤滞后(缺的那天顺延到今天接着学)。"""
+    today = study_today().isoformat()
+    fu = first_undone_day(st)
+    return min(DAYS[fu]["date"], today) if fu else today
+
+
 # ---------- 进度与成就 ----------
 def compute_stats(st):
     total_tasks = TOTAL * 3
@@ -118,18 +137,11 @@ def compute_stats(st):
         if t == 3 and e.get("hw"):
             full_days += 1
 
-    # 连续天数(以任务全完成为准，允许今天未打卡)
-    def _day_ok(d):
-        e = st["checkins"].get(d.isoformat())
-        return bool(e) and all(e.get("tasks", []))
-
-    streak = 0
-    d = study_today()
-    if not _day_ok(d):
-        d -= datetime.timedelta(days=1)
-    while _day_ok(d):
-        streak += 1
-        d -= datetime.timedelta(days=1)
+    # 连续天数(按学习日序，2026.9.29改)：从D1起连续完成的天数。
+    # 缺勤不断签——顺延机制把缺的天往后压，补上即续(自然日口径已废弃：
+    # 假期/缺勤会让旧口径永久清零)。全完成=84。
+    fu = first_undone_day(st)
+    streak = (fu - 1) if fu else TOTAL
 
     max_day = 0
     for date_str in st["checkins"]:
@@ -246,7 +258,7 @@ def api_today():
             return jsonify({"error": "日期不在84天计划内"}), 400
         now = arg
     else:
-        now = study_today().isoformat()
+        now = default_study_date(st)
     n = day_index(now)
     entry = day_entry(st, now)
     stats = compute_stats(st)
@@ -282,10 +294,10 @@ def api_today():
 @app.route("/api/checkin", methods=["POST"])
 def api_checkin():
     body = request.get_json(force=True, silent=True) or {}
-    date_str = body.get("date") or study_today().isoformat()
+    st = get_state()
+    date_str = body.get("date") or default_study_date(st)
     if day_index(date_str) is None:
         return jsonify({"error": "日期不在84天计划内"}), 400
-    st = get_state()
     before = set(earned(st, compute_stats(st)))
     with _LOCK:
         e = day_entry(st, date_str)
@@ -870,7 +882,7 @@ def api_hw_submit():
         return jsonify({"error": "还没有代码可提交"}), 400
     if len(code) > 8000:
         return jsonify({"error": "代码太长(上限8000字符)，先精简或分段提交"}), 400
-    date_str = str(body.get("date") or "").strip() or study_today().isoformat()
+    date_str = str(body.get("date") or "").strip() or default_study_date(get_state())
     n = day_index(date_str)
     pd = DAYS.get(n)
     if not pd:
@@ -967,7 +979,7 @@ def _digest_path(date_str):
 @app.route("/api/digest", methods=["POST"])
 def api_digest_generate():
     body = request.get_json(force=True, silent=True) or {}
-    date_str = body.get("date") or study_today().isoformat()
+    date_str = body.get("date") or default_study_date(get_state())
     force = bool(body.get("force"))
     n = day_index(date_str)
     if n is None:
@@ -1038,7 +1050,7 @@ def api_digest_generate():
 
 @app.route("/api/digest")
 def api_digest_get():
-    date_str = request.args.get("date") or study_today().isoformat()
+    date_str = request.args.get("date") or default_study_date(get_state())
     cpath = _digest_path(date_str)
     if not cpath.exists():
         return jsonify({"cached": False, "sections": []})

@@ -642,17 +642,29 @@ function toggleAns(btn){
   box.style.display=show?'block':'none';
   btn.textContent=show?'🙈 隐藏参考答案':'👁 显示参考答案';
 }
+// 导入块规则(2026.9.29改)：同题号=原地刷新；不同题号=追加保留——
+// 分步作业(每步要接着上一步写)可依次导入多块而不互相覆盖。
+function putBlock(kind,blk,num){
+  const s=$('#codeIn');let v=s.value;
+  const nn=(num===undefined||num===null)?'\\d*':String(num);
+  const same=new RegExp('# ▶ 题'+nn+kind+'[\\s\\S]*?# ▶ END\\n?');
+  if(same.test(v)){v=v.replace(same,blk+'\n')}
+  else{
+    const all=new RegExp('# ▶ 题\\d+'+kind+'[\\s\\S]*?# ▶ END\\n?','g');
+    let m,last=0;while((m=all.exec(v))){last=m.index+m[0].length}
+    v=last>0?v.slice(0,last)+blk+'\n'+v.slice(last):blk+'\n'+v;
+  }
+  s.value=v;
+  localStorage.setItem(ckNow(),v);
+  s.scrollIntoView({behavior:'smooth'});s.focus();
+}
 function importAns(i,j){
   const s=DIGEST&&DIGEST.sections[i];if(!s)return;
   const ex=(s.exercises||[])[j];if(!ex)return;
   const ans=(ex.a||'（本题无参考答案）').split('\n').map(l=>'# '+l).join('\n');
   const blk=`# ▶ 题${ex._k||''}参考答案（写完自己再对照！）\n${ans}\n# ▶ END`;
-  let v=$('#codeIn').value;
-  v=v.replace(/# ▶ 题\d*参考答案[\s\S]*?# ▶ END\n?/,'');
-  $('#codeIn').value=blk+'\n'+v;
-  localStorage.setItem(ckNow(),$('#codeIn').value);
-  $('#codeIn').scrollIntoView({behavior:'smooth'});$('#codeIn').focus();
-  toast('参考答案已作为注释导入练习区(原草稿保留在下面)');
+  putBlock('参考答案',blk,ex._k);
+  toast('参考答案已导入练习区(其他题的块都保留，原草稿在下面)');
 }
 function renderKp(){
   const pd=TODAY&&TODAY.plan_day;if(!pd)return;
@@ -674,12 +686,8 @@ function loadStarter(i,j){
   const ex=(s.exercises||[])[j];if(!ex)return;
   const st=ex.starter||'';
   const blk=`# ▶ 题${ex._k||''}导入（知识点：${s.kp}）\n# ${ex.q}\n${st?st+'\n':''}# ▶ END`;
-  let v=$('#codeIn').value;
-  v=v.replace(/# ▶ 题\d*导入[\s\S]*?# ▶ END\n?/,'');
-  $('#codeIn').value=blk+'\n'+v;
-  localStorage.setItem(ckNow(),$('#codeIn').value);
-  $('#codeIn').scrollIntoView({behavior:'smooth'});$('#codeIn').focus();
-  toast(st?'题干+起手模板已载入练习区，改一改点【运行】':'题干已导入练习区，开写吧');
+  putBlock('导入',blk,ex._k);
+  toast(st?'题干+起手模板已导入(分步作业可连续导入多题，块块保留)':'题干已导入(之前的块都保留)');
 }
 function askKp(i){
   const s=DIGEST&&DIGEST.sections[i];if(!s)return;
@@ -693,8 +701,10 @@ function askKp(i){
 // 默认=7点规则日(早上7点前仍算前一天)；可手动提前写明天/拖后补昨天，
 // 任务勾选、作业笔记、AI批改、打卡标记、教程汇总全都跟随所选学习日。
 let viewDate=null;
+let DEFAULT_DATE=null; // 后端定的默认学习日(含缺勤顺延规则)，回默认/提示都以它为准
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function defaultDateStr(){
+  if(DEFAULT_DATE)return DEFAULT_DATE;
   const d=new Date();if(d.getHours()<7)d.setDate(d.getDate()-1);
   let s=ymd(d);const first=PLAN.days[0].date,last=PLAN.days[PLAN.days.length-1].date;
   if(s<first)s=first;if(s>last)s=last;return s;
@@ -709,9 +719,15 @@ function updateDayBar(){
   const def=defaultDateStr();$('#dToday').disabled=(viewDate===def);
   let b=PLAN.days.findIndex(x=>x.date===def);if(b<0)b=i;
   const off=i-b;
-  $('#dHint').textContent=off===0?'默认学习日 · 早上7点前仍算前一天':
-    off>0?`提前${off}天开写：任务/批改/打卡/汇总全记 D${d.day}`:
-    `拖后${-off}天补写：任务/批改/打卡/汇总全记 D${d.day}`;
+  let hint;
+  if(off>0)hint=`提前${off}天开写：任务/批改/打卡/汇总全记 D${d.day}`;
+  else if(off<0)hint=`拖后${-off}天补写：任务/批改/打卡/汇总全记 D${d.day}`;
+  else{
+    const c=new Date();if(c.getHours()<7)c.setDate(c.getDate()-1);
+    hint=def<ymd(c)?`缺勤顺延 · 今天仍学 D${d.day}，缺的那天自动往后压不跳天`
+      :'默认学习日 · 早上7点前仍算前一天';
+  }
+  $('#dHint').textContent=hint;
   const tag=$('#subDayTag');if(tag)tag.textContent=`D${d.day}《${d.title}》`;
 }
 async function setViewDate(v){
@@ -955,8 +971,9 @@ async function renderAch(){
   try{
     initSkin();
     PLAN=await api('/api/plan');
+    TODAY=await api('/api/today'); // 默认学习日由后端定(缺哪天压到哪天，不跳天)
+    DEFAULT_DATE=TODAY.date;
     initViewDate();
-    TODAY=await api('/api/today?date='+viewDate);
     try{
       const h=await api('/api/chat');
       if(h.messages&&h.messages.length)CHAT=h.messages;
