@@ -1,6 +1,13 @@
 # 学习台 StudyBuddy
 
-84天 vibecoding 学习计划的本地学习台：进度打卡 + 每日提醒 + AI老师 + 教材资源存档 + 代码练习区 + 作业批改 + 教程汇总。
+[![GitHub stars](https://img.shields.io/github/stars/chenzhongyu331166-hub/study-buddy?style=flat&logo=github&label=stars)](https://github.com/chenzhongyu331166-hub/study-buddy/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/chenzhongyu331166-hub/study-buddy?style=flat&logo=github&label=forks)](https://github.com/chenzhongyu331166-hub/study-buddy/network/members)
+[![Python](https://img.shields.io/badge/python-3.11-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/web-Flask-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+
+**给「84天从零自学CS」造的一站式本地学习台**：每日任务打卡 + AI 老师批改作业 + 自动抓教材做教程汇总 + 终端式代码练习区——全部本地运行、免费 AI 额度，不花一分钱订阅。
+
+A self-hosted 84-day CS study dashboard: daily checklists, AI tutoring & homework grading, auto-fetched course materials, and a terminal-style code playground — runs 100% locally.
 
 - 主线：AI应用开发　副线：数据分析　备选：408考研基础
 - 起止：2026-09-26 ~ 84天后，12个阶段，每天 3任务 + 知识点 + 教材资源 + 1个编程作业
