@@ -2,6 +2,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/chenzhongyu331166-hub/study-buddy?style=flat&logo=github&label=stars)](https://github.com/chenzhongyu331166-hub/study-buddy/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/chenzhongyu331166-hub/study-buddy?style=flat&logo=github&label=forks)](https://github.com/chenzhongyu331166-hub/study-buddy/network/members)
+[![Release](https://img.shields.io/github/v/release/chenzhongyu331166-hub/study-buddy?style=flat&label=release)](https://github.com/chenzhongyu331166-hub/study-buddy/releases)
 [![Python](https://img.shields.io/badge/python-3.11-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/web-Flask-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 
