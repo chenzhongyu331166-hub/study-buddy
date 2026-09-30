@@ -1005,13 +1005,20 @@ def api_digest_generate():
         '"starter":"#可直接载入练习区的起手代码(可空字符串)"}]}],'
         '"note":"一句话学习建议"}\n'
         "要求：sections 与学生当天知识点一一对应(按给定顺序)；"
-        "exercises 是「每日刷题」的核心：每节 2-3 道、全天合计至少 5 道，"
-        "题型以动手写代码为主(给starter起手代码)，题目必须覆盖当天全部知识点、难度阶梯(基础→应用→边界)，"
-        "题目要能用当天抓取正文里的知识解决；"
+        "**汇总必须支撑学生完成下方「当天任务」**：逐条任务对照，任务需要而知识点未覆盖的"
+        "通用技能(如split/join这类常用用法)也要补讲，并在对应节的summary或points里"
+        "给出可直接照抄的最小示例代码；若任务写「精读某章节」，本汇总对应节即替代该章节，"
+        "学生不需要点开链接；"
+        "exercises 是「每日刷题」核心：每节2-3道、全天合计至少5道(少于5道视为不合格)，"
+        "其中至少1道必须直接实战当天任务(题干对应任务条目，照着任务要求写代码)；"
+        "题型以动手写代码为主(给starter起手代码)，难度阶梯(基础→应用→边界)，"
+        "题目要能用当天知识解决；"
         "starter 必须是能直接放进编辑器运行的 Python 片段(没有合适题时给空串)；"
-        "语言全中文；总长控制在2200字以内。"
+        "语言全中文；总长控制在2400字以内。"
     )
     user = (f"D{n}《{pd['title']}》\n当天知识点：{'、'.join(pd['kp'])}\n"
+            f"当天任务(汇总必须支撑逐条完成)：\n"
+            + "\n".join(f"{i}. {t}" for i, t in enumerate(pd['tasks'], 1)) + "\n"
             f"作业：{pd['hw']['t']}——{pd['hw']['d']}\n\n"
             f"以下是抓取的教材正文：\n{src}")
     last_err = None
@@ -1023,6 +1030,9 @@ def api_digest_generate():
             data = _extract_json(reply)
             if not isinstance(data.get("sections"), list) or not data["sections"]:
                 raise ValueError("sections为空")
+            n_ex = sum(len(s.get("exercises") or []) for s in data["sections"])
+            if n_ex < 5:
+                raise ValueError(f"exercises只有{n_ex}道，不足5道")
             data["_meta"] = {"date": date_str, "day": n,
                              "generated": datetime.datetime.now().isoformat(timespec="seconds"),
                              "source_file": md.name}
