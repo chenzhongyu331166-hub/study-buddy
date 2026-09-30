@@ -92,17 +92,17 @@ html[data-theme="mono"]{
   --out-err:#f85149;
 }
 html[data-theme="gold"]{
-  --bg:#0a0a09; --bg2:#18160c; --panel:#181713; --panel2:#222420;
-  --line:#45443f; --fg:#f6eed5; --dim:#b5ae9c; --acc:#d4af37;
-  --acc2:#a89a7d; --btn-fg:#0d0c08; --acc-text:#d9b84f; --ok:#9db86a;
-  --warn:#dcbd5b; --bad:#d47a5f; --btn-good-fg:#0b0d10; --glow:rgba(212,175,55,0.1);
-  --h2a:#ebdaa2; --h2b:#d4af37; --code-bg:#0e0e0c; --partial-bg:#473c17;
-  --partial-fg:#f6eed5; --full-fg:#0b0d10; --exer-bg:#2c291c; --exer-line:#77693c;
-  --exer-fg:#d4af37; --starter-bg:#0e0e0c; --starter-fg:#9db86a; --msg-me:#544b26;
-  --msg-ai-bg:#363c2c; --msg-ai-line:#717e55; --ach-got-bg:#363c2c; --toast-bg:#272d1c;
-  --toast-fg:#f6eed5; --hint-bg:#282310; --hint-line:#8d7a3b; --hint-fg:#d4af37;
-  --wbox-bg:#2c2716; --wbox-line:#98874e; --wbox-fg:#dcbd5b; --live-bg:#18160c;
-  --live-line:#85743b; --hwglow:#dcbd5b; --dayrow-hover:#31322d; --out-ok:#9db86a;
+  --bg:#040404; --bg2:#151309; --panel:#0e0e0d; --panel2:#161513;
+  --line:#3a3934; --fg:#f6eed5; --dim:#b5ae9c; --acc:#f0da4e;
+  --acc2:#bfb45e; --btn-fg:#0d0c08; --acc-text:#f0da4e; --ok:#9db86a;
+  --warn:#eed655; --bad:#d47a5f; --btn-good-fg:#0b0d10; --glow:rgba(240,218,78,0.08);
+  --h2a:#f6ec9c; --h2b:#f0da4e; --code-bg:#070707; --partial-bg:#4b441a;
+  --partial-fg:#f6eed5; --full-fg:#0b0d10; --exer-bg:#242215; --exer-line:#7a713d;
+  --exer-fg:#f0da4e; --starter-bg:#070707; --starter-fg:#9db86a; --msg-me:#534c24;
+  --msg-ai-bg:#2c2f21; --msg-ai-line:#6c794f; --ach-got-bg:#2c2f21; --toast-bg:#232818;
+  --toast-fg:#f6eed5; --hint-bg:#27240f; --hint-line:#958a41; --hint-fg:#f0da4e;
+  --wbox-bg:#292611; --wbox-line:#9d8f46; --wbox-fg:#eed655; --live-bg:#151309;
+  --live-line:#8c8140; --hwglow:#eed655; --dayrow-hover:#262421; --out-ok:#9db86a;
   --out-err:#d47a5f;
 }
 html[data-theme="wine"]{
@@ -282,6 +282,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
       <h3>作业笔记(卡在哪/怎么解决的)</h3>
       <textarea id="hwNote" rows="3" placeholder="写代码的过程记录，AI老师看得到..."></textarea>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" onclick="loadHwBlock()">📝 把作业要求导入练习区开写</button>
         <button class="btn ghost" id="saveNote">保存笔记</button>
         <button class="btn ghost" id="askNoteBtn">让AI老师检查我的笔记</button>
       </div>
@@ -642,18 +643,17 @@ function toggleAns(btn){
   box.style.display=show?'block':'none';
   btn.textContent=show?'🙈 隐藏参考答案':'👁 显示参考答案';
 }
-// 导入块规则(2026.9.29改)：同题号=原地刷新；不同题号=追加保留——
-// 分步作业(每步要接着上一步写)可依次导入多块而不互相覆盖。
+// 导入块规则(2026.9.30改回覆盖)：同题号=原地刷新(题干/参考答案同题共存)；
+// 不同题号=新题覆盖旧题——旧题的块自动清除(块外的手写草稿保留)，不用手动清空。
 function putBlock(kind,blk,num){
   const s=$('#codeIn');let v=s.value;
-  const nn=(num===undefined||num===null)?'\\d*':String(num);
-  const same=new RegExp('# ▶ 题'+nn+kind+'[\\s\\S]*?# ▶ END\\n?');
+  const keep=(num!==undefined&&num!==null)?String(num):null;
+  const esc=keep===null?'\\d+':keep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const same=new RegExp('# ▶ 题'+esc+kind+'[\\s\\S]*?# ▶ END\\n?');
   if(same.test(v)){v=v.replace(same,blk+'\n')}
-  else{
-    const all=new RegExp('# ▶ 题\\d+'+kind+'[\\s\\S]*?# ▶ END\\n?','g');
-    let m,last=0;while((m=all.exec(v))){last=m.index+m[0].length}
-    v=last>0?v.slice(0,last)+blk+'\n'+v.slice(last):blk+'\n'+v;
-  }
+  else{v=blk+'\n'+v.replace(/^\n+/,'')}
+  const oldAll=new RegExp('# ▶ 题(\\d+|hw)[^\\n]*[\\s\\S]*?# ▶ END\\n?','g');
+  v=v.replace(oldAll,(m,n)=>(keep!==null&&n===keep)?m:'');
   s.value=v;
   localStorage.setItem(ckNow(),v);
   s.scrollIntoView({behavior:'smooth'});s.focus();
@@ -664,7 +664,7 @@ function importAns(i,j){
   const ans=(ex.a||'（本题无参考答案）').split('\n').map(l=>'# '+l).join('\n');
   const blk=`# ▶ 题${ex._k||''}参考答案（写完自己再对照！）\n${ans}\n# ▶ END`;
   putBlock('参考答案',blk,ex._k);
-  toast('参考答案已导入练习区(其他题的块都保留，原草稿在下面)');
+  toast('参考答案已导入(与题干同题共存，旧题的块已清除)');
 }
 function renderKp(){
   const pd=TODAY&&TODAY.plan_day;if(!pd)return;
@@ -687,7 +687,14 @@ function loadStarter(i,j){
   const st=ex.starter||'';
   const blk=`# ▶ 题${ex._k||''}导入（知识点：${s.kp}）\n# ${ex.q}\n${st?st+'\n':''}# ▶ END`;
   putBlock('导入',blk,ex._k);
-  toast(st?'题干+起手模板已导入(分步作业可连续导入多题，块块保留)':'题干已导入(之前的块都保留)');
+  toast(st?'题干+起手已导入，旧题的块已清除':'题干已导入，旧题的块已清除');
+}
+function loadHwBlock(){
+  const pd=TODAY&&TODAY.plan_day;
+  if(!pd||!pd.hw){toast('今天没有作业');return}
+  const blk=`# ▶ 题hw课后作业（${pd.hw.t}）\n# 要求：${pd.hw.d}\n# 期望：${pd.hw.e||''}\n# 作业代码写在这行下面，写完点【交给AI老师批改】\n# ▶ END`;
+  putBlock('课后作业',blk,'hw');
+  toast('作业要求已导入，旧题的块已清除(代码写在注释块下方)');
 }
 function askKp(i){
   const s=DIGEST&&DIGEST.sections[i];if(!s)return;
