@@ -178,6 +178,11 @@ main{padding:22px;max-width:1100px;margin:0 auto}
 .subhist .hitem{padding:7px 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);margin-bottom:6px;cursor:pointer;font-size:13px}
 .subhist .hitem:hover{border-color:var(--acc)}
 .fb{white-space:pre-wrap;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;font-size:14px;line-height:1.65;display:none}
+.cblk{font-family:Consolas,monospace;font-size:12px;background:var(--code-bg);padding:8px 10px;border-radius:8px;white-space:pre-wrap;word-break:break-all;max-height:380px;overflow:auto;margin-top:6px;border:1px solid var(--line);line-height:1.5}
+.calCode{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px}
+.calCode h3{margin:10px 0 6px}
+.calCode .hitem{padding:7px 8px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);margin-bottom:6px}
+.calCode .hitem summary{cursor:pointer;font-size:13px}
 .runout{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px;min-height:44px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.5;display:none}
 .task{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
 .task input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px}
@@ -355,10 +360,21 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 <section class="page" id="p-progress">
   <div class="card"><h2>总览</h2><div class="stats" id="statBox"></div></div>
   <div class="card"><h2>阶段完成度</h2><div id="stageBars"></div></div>
-  <div class="card"><h2>84天打卡日历</h2>
-    <div class="muted" style="margin-bottom:8px">灰=未开始 / 蓝=任务部分完成 / 绿=任务全完成 / <b style="color:var(--hwglow)">金色光边=已交作业(更亮)</b></div>
-    <div class="cal" id="calBox"></div>
+  <div class="muted" style="margin-bottom:8px">灰=未开始 / 蓝=任务部分完成 / 绿=任务全完成 / <b style="color:var(--hwglow)">金色光边=已交作业(更亮)</b> · <b>点任意日期 → 下方直接回看这天你写的代码(练习草稿/每题存档/作业提交)</b></div>
+  <div class="cal" id="calBox"></div>
+  <div class="calCode" id="calCode" style="display:none"></div>
+  <div class="card" style="margin-top:8px;border:1px dashed var(--line);padding:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div>
+        <b>今日任务</b> <span id="todayTaskText">无任务</span>
+      </div>
+      <div style="text-align:right">
+        <button class="btn ghost" onclick="window.location='/';viewDate='${TODAY.date||defaultDateStr()}';go('today')">看今天的练习题</button>
+      </div>
+    </div>
+    <div id="taskProgress" style="margin-top:6px;font-size:13px;color:var(--dim)"></div>
   </div>
+</div>
 </section>
 
 <section class="page" id="p-resource">
@@ -469,6 +485,7 @@ function renderToday(){
   $('#codeIn').value = draft!==null ? draft
     : `# D${t.day} 作业：${pd.hw.t}\n# 要求：${pd.hw.d}\n# 写完点下面【运行】，报错会原样显示在下方\n\n`;
   $('#stdinIn').value = localStorage.getItem(ck+'stdin')||'';
+  $('#subIn').value = localStorage.getItem('subD'+t.day)||'';
   $('#runOut').style.display='none';
   renderKp();
   const resHtml=pd.res.map((r,i)=>{
@@ -487,8 +504,10 @@ $('#askNoteBtn').onclick=()=>{
 
 // ---------- 代码练习(会话式真实运行，可边跑边喂输入) ----------
 const ckNow=()=> 'codeD'+(TODAY?TODAY.day:'x');
+const subKey=()=> 'subD'+(TODAY?TODAY.day:'x');
 $('#codeIn').oninput=()=>localStorage.setItem(ckNow(),$('#codeIn').value);
 $('#stdinIn').oninput=()=>localStorage.setItem(ckNow()+'stdin',$('#stdinIn').value);
+$('#subIn').oninput=()=>localStorage.setItem(subKey(),$('#subIn').value);
 $('#clearCode').onclick=()=>{$('#codeIn').value='';localStorage.removeItem(ckNow());$('#runOut').style.display='none'};
 
 let RUN_SID=null, RUN_TIMER=null, RUN_LAST='';
@@ -613,12 +632,14 @@ function renderDigest(r){
       <ul class="pts">${(s.points||[]).map(p=>'<li>'+esc(p)+'</li>').join('')}</ul>
       ${(s.exercises||[]).map((ex,j)=>{kn++;ex._k=kn;return `
         <div class="exer">
-          <details><summary>题${kn}：${esc(ex.q)} <span class="muted">(${esc(s.kp)})</span></summary>
+          <details><summary>题${kn}：${esc(ex.q)} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span></summary>
             <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn ghost" onclick="toggleAns(this)">👁 显示参考答案</button>
               <button class="btn ghost" onclick="loadStarter(${i},${j})">▶ 载入练习区开写</button>
               <button class="btn ghost" onclick="importAns(${i},${j})">📤 参考答案导入练习区</button>
               <button class="btn ghost" onclick="askExercise(${i},${j})">这题不会，问AI</button>
+              <button class="btn ghost" onclick="saveMine(${i},${j})" title="把练习区当前代码存为这道题的版本，进度页点日期可回看">💾 存我的代码</button>
+              <button class="btn ghost" onclick="loadMine(${i},${j})">📥 载入我的代码</button>
             </div>
             <div class="ansbox" style="display:none;margin-top:6px"><b>参考答案：</b>${esc(ex.a||'')}</div>
             ${ex.starter?`<div class="starter">${esc(ex.starter)}</div>`:''}
@@ -763,12 +784,17 @@ async function loadSubs(){
     $$('#subHist .hitem').forEach(el=>el.onclick=()=>{
       const x=box._all[+el.dataset.i];
       const fb=$('#subFb');fb.style.display='block';
-      fb.textContent='【'+x.t+' D'+x.day+' 批改记录】\n\n'+x.feedback;
+      fb.innerHTML='<b>【'+esc(x.t)+' · D'+x.day+' 批改记录】</b>'+
+        '<div style="margin-top:8px"><b>我的代码：</b></div><pre class="cblk">'+esc(x.code||'')+'</pre>'+
+        '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+
+        '<button class="btn ghost" onclick="calCopy('+calPush(x.code||'')+')">复制代码</button>'+
+        '<button class="btn ghost" onclick="calLoad('+calPush(x.code||'')+')">载入练习区</button></div>'+
+        '<div style="margin-top:8px"><b>批改意见：</b></div><div>'+esc(x.feedback||'')+'</div>';
       fb.scrollIntoView({behavior:'smooth'});
     });
   }catch(e){box.innerHTML='<div class="muted">'+esc(e.message)+'</div>'}
 }
-$('#subFromRun').onclick=()=>{$('#subIn').value=$('#codeIn').value;toast('已从练习区带入代码')};
+$('#subFromRun').onclick=()=>{$('#subIn').value=$('#codeIn').value;localStorage.setItem(subKey(),$('#codeIn').value);toast('已从练习区带入代码')};
 $('#subBtn').onclick=async()=>{
   const code=$('#subIn').value;
   if(!code.trim()){alert('还没有代码可提交');return}
@@ -845,6 +871,116 @@ function showDay(n){
   $('#detail').scrollIntoView({behavior:'smooth'});
 }
 
+// ---------- 我的代码存档(每题)：localStorage即时生效 + /api/mysave服务器持久镜像 ----------
+function dgDate(){return DIGEST_DATE||(TODAY&&TODAY.date)||viewDate}
+function nowT(){const d=new Date(),p=x=>String(x).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())}
+const mineKey=(date,q)=>'my:'+date+':'+q;
+function mineGet(date,q){try{const s=localStorage.getItem(mineKey(date,q));return s?JSON.parse(s):null}catch(e){return null}}
+function mineSet(date,q,code){
+  const v={code:code,t:nowT()};
+  try{localStorage.setItem(mineKey(date,q),JSON.stringify(v))}catch(e){}
+  fetch('/api/mysave',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({date:date,key:q,code:code})}).catch(()=>{}); // 服务器端点生效前静默
+  return v;
+}
+function mineList(date){
+  const out={},pre='my:'+date+':';
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
+    if(k&&k.indexOf(pre)===0){try{out[k.slice(pre.length)]=JSON.parse(localStorage.getItem(k))}catch(e){}}}
+  return out;
+}
+function saveMine(i,j){
+  const s=DIGEST&&DIGEST.sections[i];if(!s)return;
+  const ex=(s.exercises||[])[j];if(!ex)return;
+  const code=$('#codeIn').value;
+  if(!code.trim()){toast('练习区还是空的，先写代码再存');return}
+  const q='题'+(ex._k||j),date=dgDate();
+  mineSet(date,q,code);
+  const mm=document.getElementById('mm_'+i+'_'+j);
+  if(mm)mm.textContent=' 💾已存 '+nowT().slice(11,16);
+  toast('已存档 <b>'+q+'</b> · '+date+' — 进度页点日期可随时回看');
+}
+function loadMine(i,j){
+  const s=DIGEST&&DIGEST.sections[i];if(!s)return;
+  const ex=(s.exercises||[])[j];if(!ex)return;
+  const date=dgDate(),q='题'+(ex._k||j);
+  const m=mineGet(date,q);
+  if(!m){toast(q+' 在 '+date+' 还没有你的存档(写完点💾存我的代码)');return}
+  const ta=$('#codeIn');
+  if(ta.value.trim()&&ta.value!==m.code&&!confirm('用 '+q+' 的存档覆盖练习区当前代码？'))return;
+  ta.value=m.code;localStorage.setItem(ckNow(),m.code);
+  toast('已载入 '+q+' 的存档('+m.t.replace('T',' ')+')');
+}
+// 代码回顾面板用的临时代码仓(按钮onclick只带下标)
+let _calCodes=[];
+function calPush(c){_calCodes.push(c);return _calCodes.length-1}
+function calCopy(i){copyText(_calCodes[i]||'')}
+function copyText(t){
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject())
+    .then(()=>toast('已复制到剪贴板'))
+    .catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');toast('已复制到剪贴板')}catch(e){toast('复制失败，手动选中复制')}
+      ta.remove()});
+}
+function calLoad(i){
+  const code=_calCodes[i]||'';
+  if(!code.trim()){toast('这段代码是空的');return}
+  const ta=$('#codeIn');
+  if(ta.value.trim()&&ta.value!==code&&!confirm('覆盖练习区当前代码？(当前内容已自动存为今天草稿的上一版…直接覆盖)'))return;
+  ta.value=code;localStorage.setItem(ckNow(),code);
+  go('today');ta.scrollIntoView({behavior:'smooth'});
+  toast('已载入练习区(自动存为当前天草稿)');
+}
+function calSub(i){
+  const code=_calCodes[i]||'';
+  $('#subIn').value=code;localStorage.setItem(subKey(),code);
+  go('today');toast('已放进作业批改框');
+}
+async function calDay(n){
+  const d=PLAN.days[n-1];if(!d)return;
+  const date=d.date,box=$('#calCode');
+  box.style.display='block';
+  box.innerHTML='<div class="loading">加载 D'+n+' 的代码存档...</div>';
+  box.scrollIntoView({behavior:'smooth'});
+  _calCodes=[];
+  let subs=[];
+  try{const r=await api('/api/hw/submissions');subs=(r.subs&&r.subs[date])||[]}catch(e){}
+  let server={};
+  try{const r=await api('/api/mysave?date='+date);server=r.saves||{}}catch(e){}
+  const mine=mineList(date);
+  for(const k in server){const sv=server[k];if(!mine[k]||(sv.t||'')>(mine[k].t||''))mine[k]=sv}
+  const draft=localStorage.getItem('codeD'+n)||'';
+  const subDraft=localStorage.getItem('subD'+n)||'';
+  const btns=(idx,extra)=>`<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+    <button class="btn ghost" onclick="calCopy(${idx})">复制</button>
+    <button class="btn ghost" onclick="calLoad(${idx})">载入练习区</button>${extra||''}</div>`;
+  let h=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+    <h3 style="margin:0">D${n} ${esc(d.title)} · ${date} 我写的代码</h3>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="showDay(${n});go('outline')">看这天的大纲/作业要求</button>
+      <button class="btn ghost" onclick="$('#calCode').style.display='none'">收起</button>
+    </div></div>`;
+  h+=`<div class="muted" style="margin-top:4px">每题存档=练习页各题【💾存我的代码】 · 练习草稿=练习区自动存的当日代码 · 作业提交=AI批改过的版本</div>`;
+  subs.sort((a,b)=>a.t<b.t?1:-1);
+  h+='<h3>作业提交('+subs.length+'份·最新在上)</h3>';
+  h+=subs.length?subs.map((x,idx)=>`
+    <details class="hitem"><summary>D${x.day} · ${esc(x.t.replace('T',' '))} · ${esc((x.code||'').replace(/\s+/g,' ').slice(0,60))}...</summary>
+    ${btns(calPush(x.code||''),`<button class="btn ghost" onclick="calSub(${_calCodes.length-1})">放进批改框</button>`)}
+    <div style="margin-top:6px;font-size:13px;white-space:pre-wrap">${esc(x.feedback||'')}</div>
+    </details>`).join(''):'<div class="muted">这天没有AI批改记录。</div>';
+  h+='<h3>每题存档('+Object.keys(mine).length+'条)</h3>';
+  h+=Object.keys(mine).length?Object.keys(mine).sort((a,b)=>a.localeCompare(b,'zh')).map(q=>`
+    <details class="hitem"><summary>${esc(q)} · ${esc((mine[q].t||'').replace('T',' '))}</summary>
+    ${btns(calPush(mine[q].code||''))}
+    <pre class="cblk">${esc(mine[q].code||'')}</pre></details>`).join(''):'<div class="muted">这天还没有按题存档。到今日页教程汇总里点开题目【💾存我的代码】。</div>';
+  h+='<h3>练习区当日草稿</h3>';
+  h+=draft?`<pre class="cblk">${esc(draft)}</pre>${btns(calPush(draft))}`:'<div class="muted">没有草稿。</div>';
+  h+='<h3>作业提交框草稿</h3>';
+  h+=subDraft?`<pre class="cblk">${esc(subDraft)}</pre>${btns(calPush(subDraft),`<button class="btn ghost" onclick="calSub(${_calCodes.length-1})">放进批改框</button>`)}`:'<div class="muted">没有。作业框代码现在按天自动存，关页面不丢。</div>';
+  box.innerHTML=h;
+}
+
 // ---------- 进度 ----------
 async function renderProgress(){
   const s=await api('/api/state');window._state=s;const st=s.stats;
@@ -862,7 +998,7 @@ async function renderProgress(){
   for(let n=1;n<=84;n++){const d=PLAN.days[n-1],e=s.state.checkins[d.date]||{tasks:[],hw:false};
     const done=(e.tasks||[]).filter(Boolean).length;
     const cls=(done===3?'full':(done>0?'partial':''))+(e.hw?' hw':'');
-    html+=`<div class="d ${cls}" title="D${n} ${d.title} 任务${done}/3${e.hw?' ✔已交作业':''}" onclick="showDay(${n});go('outline')">${n}</div>`}
+    html+=`<div class="d ${cls}" title="D${n} ${d.title} 任务${done}/3${e.hw?' ✔已交作业':''} · 点击看这天写的代码" onclick="calDay(${n})">${n}</div>`}
   $('#calBox').innerHTML=html;
   const tIdx=PLAN.days.findIndex(d=>d.date===TODAY.date);
   if(tIdx>=0)$$('#calBox .d')[tIdx].classList.add('today');

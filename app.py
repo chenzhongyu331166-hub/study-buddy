@@ -937,6 +937,32 @@ def api_hw_submissions():
     st = get_state()
     return jsonify({"subs": st.get("subs", {})})
 
+# ---------- 每题代码存档("我的代码")：服务器持久化，浏览器localStorage为镜像 ----------
+MYSAVE_PATH = ROOT / "data" / "mysaves.json"
+
+
+@app.route("/api/mysave", methods=["GET", "POST"])
+def api_mysave():
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        date_str = str(body.get("date") or "").strip()
+        key = str(body.get("key") or "").strip()[:40]
+        code = str(body.get("code") or "")
+        if not date_str or not key:
+            return jsonify({"error": "缺少date/key"}), 400
+        if len(code) > 200000:
+            return jsonify({"error": "代码太长(上限20万字符)"}), 400
+        now = datetime.datetime.now().isoformat(timespec="seconds")
+        with _LOCK:
+            ms = load_json(MYSAVE_PATH, {})
+            day = ms.setdefault(date_str, {})
+            day[key] = {"code": code, "t": now, "day": day_index(date_str)}
+            save_json(MYSAVE_PATH, ms)
+        return jsonify({"ok": 1, "t": now})
+    date_str = (request.args.get("date") or "").strip()
+    ms = load_json(MYSAVE_PATH, {})
+    return jsonify({"saves": ms.get(date_str, {}) if date_str else ms})
+
 
 # ---------- AI教程汇总：读已抓取正文，按知识点分节+嵌练习题 ----------
 DIGEST_DIR = ROOT / "data" / "digests"
