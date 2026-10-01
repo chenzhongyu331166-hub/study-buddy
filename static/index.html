@@ -334,6 +334,13 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
   <div class="card">
     <h2>作业提交区 <span class="tag">直通AI老师 · 深度批改</span></h2>
     <div class="muted" style="margin-bottom:8px">把作业代码贴进来(或从练习区带入)，AI老师按<b id="subDayTag" style="color:var(--acc-text)">当前学习日</b>的作业要求逐项批改，批改记录自动存档可回看。想换天(提前写明天/补写昨天)用页面顶部的<b>学习日</b>切换条，任务/打卡/批改/汇总全都跟着走。</div>
+    <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="loadHwBlock()">▶ 载入练习区开写(带作业要求)</button>
+      <button class="btn ghost" onclick="importHwExpect()">📤 期望效果导入练习区</button>
+      <button class="btn ghost" onclick="saveHwMine()" title="把练习区当前代码存为作业存档；进度页/大纲页点这一天都能回看">💾 存我的代码</button>
+      <button class="btn ghost" onclick="loadHwMine()">📥 载入我的代码</button>
+      <button class="btn ghost" onclick="askHw()">不会，问AI</button>
+    </div>
     <textarea id="subIn" rows="9" spellcheck="false" placeholder="把写好的作业代码贴在这里..."></textarea>
     <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" id="subBtn">交给AI老师批改</button>
@@ -505,7 +512,7 @@ $('#askNoteBtn').onclick=()=>{
 // ---------- 代码练习(会话式真实运行，可边跑边喂输入) ----------
 const ckNow=()=> 'codeD'+(TODAY?TODAY.day:'x');
 const subKey=()=> 'subD'+(TODAY?TODAY.day:'x');
-$('#codeIn').oninput=()=>localStorage.setItem(ckNow(),$('#codeIn').value);
+$('#codeIn').oninput=()=>{localStorage.setItem(ckNow(),$('#codeIn').value);autoSaveSoon()};
 $('#stdinIn').oninput=()=>localStorage.setItem(ckNow()+'stdin',$('#stdinIn').value);
 $('#subIn').oninput=()=>localStorage.setItem(subKey(),$('#subIn').value);
 $('#clearCode').onclick=()=>{$('#codeIn').value='';localStorage.removeItem(ckNow());$('#runOut').style.display='none'};
@@ -648,7 +655,8 @@ function renderDigest(r){
       <div style="margin-top:8px"><button class="btn ghost" onclick="askKp(${i})">问这个知识点 →</button></div>
     </div>`).join('');
   box.innerHTML=banner+(r.note?`<div class="muted" style="margin-bottom:8px">💡 ${esc(r.note)}</div>`:'')
-    +(kn?`<div class="muted" style="margin-bottom:8px">共 <b>${kn}</b> 道练习题(藏在各节里) · 点开题干 → 想先自己做就只看题，卡住了再点【显示参考答案】</div>`:'')
+    +(kn?`<div class="hintbox on" style="margin-bottom:8px">共 <b>${kn}</b> 道练习题(藏在各节里) · 点开题干 → 想先自己做就只看题，卡住了再点【显示参考答案】<br>
+    💾 <b>代码会自动存档</b>：载入某题后停笔 1.2 秒、切到下一题、切换学习日、关页面都会自动存。回看：进度页日历点这一天，或大纲页点某天 →【看这天我写的代码】。</div>`:'')
     +sectionsHtml
     +(r._meta?`<div class="muted">来源：${esc(r._meta.source_file||'')} · ${esc(r._meta.generated||'')}</div>`:'');
   const again=document.createElement('div');
@@ -682,9 +690,11 @@ function putBlock(kind,blk,num){
 function importAns(i,j){
   const s=DIGEST&&DIGEST.sections[i];if(!s)return;
   const ex=(s.exercises||[])[j];if(!ex)return;
+  autoSaveMine();                    // 导入会改代码区，先存住当前题
   const ans=(ex.a||'（本题无参考答案）').split('\n').map(l=>'# '+l).join('\n');
   const blk=`# ▶ 题${ex._k||''}参考答案（写完自己再对照！）\n${ans}\n# ▶ END`;
   putBlock('参考答案',blk,ex._k);
+  markCur(i,j);
   toast('参考答案已导入(与题干同题共存，旧题的块已清除)');
 }
 function renderKp(){
@@ -705,17 +715,58 @@ function askExercise(i,j){
 function loadStarter(i,j){
   const s=DIGEST&&DIGEST.sections[i];if(!s)return;
   const ex=(s.exercises||[])[j];if(!ex)return;
+  autoSaveMine();                    // 切题前自动存住上一题
   const st=ex.starter||'';
   const blk=`# ▶ 题${ex._k||''}导入（知识点：${s.kp}）\n# ${ex.q}\n${st?st+'\n':''}# ▶ END`;
   putBlock('导入',blk,ex._k);
+  markCur(i,j);                      // 这道题成为"当前题"
   toast(st?'题干+起手已导入，旧题的块已清除':'题干已导入，旧题的块已清除');
 }
 function loadHwBlock(){
   const pd=TODAY&&TODAY.plan_day;
   if(!pd||!pd.hw){toast('今天没有作业');return}
+  autoSaveMine();                    // 切到作业前先存住上一题
   const blk=`# ▶ 题hw课后作业（${pd.hw.t}）\n# 要求：${pd.hw.d}\n# 期望：${pd.hw.e||''}\n# 作业代码写在这行下面，写完点【交给AI老师批改】\n# ▶ END`;
   putBlock('课后作业',blk,'hw');
+  CUR_Q={d:dgDate(),q:'作业',i:null,j:null};   // 作业区也算一种"当前题"
   toast('作业要求已导入，旧题的块已清除(代码写在注释块下方)');
+}
+function askHw(){
+  const pd=TODAY&&TODAY.plan_day;
+  if(!pd||!pd.hw){toast('今天没有作业');return}
+  go('ai');
+  $('#chatIn').value=`今天的作业是「${pd.hw.t}」：${pd.hw.d}\n期望：${pd.hw.e||''}\n我卡在这一步，先给我一点起手思路(别直接给完整答案)：`;
+  $('#chatIn').focus();
+}
+function importHwExpect(){
+  const pd=TODAY&&TODAY.plan_day;
+  if(!pd||!pd.hw){toast('今天没有作业');return}
+  autoSaveMine();
+  const blk=`# ▶ 题hw期望效果（${pd.hw.t}）\n# 要求：${pd.hw.d}\n# 期望：${pd.hw.e||''}\n# 我的代码写在这行下面，写完点【交给AI老师批改】\n# ▶ END`;
+  putBlock('期望效果',blk,'hw');
+  CUR_Q={d:dgDate(),q:'作业',i:null,j:null};
+  toast('期望效果已导入(旧题的块已清除)');
+}
+function saveHwMine(){
+  const pd=TODAY&&TODAY.plan_day;
+  if(!pd||!pd.hw){toast('今天没有作业');return}
+  const code=$('#codeIn').value;
+  if(!code.trim()){toast('练习区还是空的，先写代码再存');return}
+  const date=dgDate();
+  mineSet(date,'作业',code);CUR_Q={d:date,q:'作业',i:null,j:null};
+  toast('已存档 <b>作业</b> · '+date+' — 大纲/进度页点这一天可随时回看');
+}
+function loadHwMine(){
+  const pd=TODAY&&TODAY.plan_day;
+  if(!pd||!pd.hw){toast('今天没有作业');return}
+  const date=dgDate(),m=mineGet(date,'作业');
+  if(!m){toast('作业在 '+date+' 还没有存档(写完会自动存档)');return}
+  const ta=$('#codeIn');
+  if(ta.value.trim()&&ta.value!==m.code&&!confirm('用作业的存档覆盖练习区当前代码？'))return;
+  autoSaveMine();
+  ta.value=m.code;localStorage.setItem(ckNow(),m.code);
+  CUR_Q={d:date,q:'作业',i:null,j:null};
+  toast('已载入作业存档('+m.t.replace('T',' ')+')');
 }
 function askKp(i){
   const s=DIGEST&&DIGEST.sections[i];if(!s)return;
@@ -760,6 +811,8 @@ function updateDayBar(){
 }
 async function setViewDate(v){
   if(v===viewDate)return;
+  autoSaveMine(true);               // 换学习日前把当前题的代码存住
+  CUR_Q=null;
   viewDate=v;updateDayBar();
   try{TODAY=await api('/api/today?date='+viewDate);renderToday();_stateCache=null}
   catch(e){alert(e.message)}
@@ -803,6 +856,7 @@ $('#subBtn').onclick=async()=>{
   $('#subMark').style.display='none';
   try{
     const r=await post('/api/hw/submit',{code,thinking:$('#subThink').checked,date:viewDate});
+    mineSet(viewDate,'作业',code);   // 作业以最后提交的这一版为准，同步到当天存档
     fb.textContent=r.feedback;
     if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
     $('#subMark').style.display='';
@@ -864,14 +918,20 @@ function showDay(n){
   const d=PLAN.days[n-1];
   $('#detail').innerHTML=`<h2>D${n} ${d.title}</h2>
     <div class="muted">${d.date} · 阶段${d.stage}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+      <button class="btn" onclick="showDayCode(${n})">💾 看这天我写的代码（每题存档/作业各版批改）</button>
+    </div>
     <h3>任务</h3>${d.tasks.map((x,i)=>`<div class="res">${i+1}. ${x}</div>`).join('')}
     <h3>知识点</h3><div class="res">${d.kp.join(' · ')}</div>
     <h3>资源</h3>${d.res.map((r,i)=>`<div class="res"><a href="${r.u}" target="_blank">${i+1}. ${r.t}</a><div class="src">${r.src}</div></div>`).join('')}
-    <h3>作业：${d.hw.t}</h3><div class="res">${d.hw.d}</div><div class="muted">期望：${d.hw.e}</div>`;
+    <h3>作业：${d.hw.t}</h3><div class="res">${d.hw.d}</div><div class="muted">期望：${d.hw.e}</div>
+    <div id="detailCode" class="calCode" style="display:none"></div>`;
   $('#detail').scrollIntoView({behavior:'smooth'});
 }
 
 // ---------- 我的代码存档(每题)：localStorage即时生效 + /api/mysave服务器持久镜像 ----------
+// 自动存档规则(2026.10.02)：练习区里正在写的那道题，切换到别的题/离开本页/
+// 关页面前自动存；作业区同理(存为'作业'存档)。作业以最后提交的一版为准。
 function dgDate(){return DIGEST_DATE||(TODAY&&TODAY.date)||viewDate}
 function nowT(){const d=new Date(),p=x=>String(x).padStart(2,'0');
   return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds())}
@@ -896,7 +956,7 @@ function saveMine(i,j){
   const code=$('#codeIn').value;
   if(!code.trim()){toast('练习区还是空的，先写代码再存');return}
   const q='题'+(ex._k||j),date=dgDate();
-  mineSet(date,q,code);
+  mineSet(date,q,code);CUR_Q={d:date,q:q,i:i,j:j};
   const mm=document.getElementById('mm_'+i+'_'+j);
   if(mm)mm.textContent=' 💾已存 '+nowT().slice(11,16);
   toast('已存档 <b>'+q+'</b> · '+date+' — 进度页点日期可随时回看');
@@ -906,12 +966,40 @@ function loadMine(i,j){
   const ex=(s.exercises||[])[j];if(!ex)return;
   const date=dgDate(),q='题'+(ex._k||j);
   const m=mineGet(date,q);
-  if(!m){toast(q+' 在 '+date+' 还没有你的存档(写完点💾存我的代码)');return}
+  if(!m){toast(q+' 在 '+date+' 还没有你的存档(写完会自动存档)');return}
   const ta=$('#codeIn');
   if(ta.value.trim()&&ta.value!==m.code&&!confirm('用 '+q+' 的存档覆盖练习区当前代码？'))return;
+  autoSaveMine(); // 覆盖前先存住当前这道题
   ta.value=m.code;localStorage.setItem(ckNow(),m.code);
+  CUR_Q={d:date,q:q,i:i,j:j};
   toast('已载入 '+q+' 的存档('+m.t.replace('T',' ')+')');
 }
+// ---------- 自动存档：记住"当前正在写哪道题"，切题/离开时自动存 ----------
+let CUR_Q=null;      // {d:日期,q:'题N'|'作业',i,j}
+let _asTimer=null;
+function markCur(i,j){
+  const s=DIGEST&&DIGEST.sections[i];if(!s)return;
+  const ex=(s.exercises||[])[j];if(!ex)return;
+  CUR_Q={d:dgDate(),q:'题'+(ex._k||j),i:i,j:j};
+}
+function autoSaveMine(silent){
+  if(!CUR_Q)return;
+  const ta=$('#codeIn');if(!ta)return;
+  const code=ta.value;if(!code||!code.trim())return;
+  const old=mineGet(CUR_Q.d,CUR_Q.q);
+  if(old&&old.code===code)return;               // 没改过就别重复写
+  mineSet(CUR_Q.d,CUR_Q.q,code);
+  if(!silent)toast('已自动存档 <b>'+CUR_Q.q+'</b> · '+CUR_Q.d);
+  if(CUR_Q.i!=null&&CUR_Q.j!=null){
+    const mm=document.getElementById('mm_'+CUR_Q.i+'_'+CUR_Q.j);
+    if(mm)mm.textContent=' 💾已存 '+nowT().slice(11,16);
+  }
+}
+function autoSaveSoon(){
+  clearTimeout(_asTimer);
+  _asTimer=setTimeout(()=>autoSaveMine(true),1200); // 停笔1.2秒自动存，不打断
+}
+window.addEventListener('beforeunload',()=>{try{autoSaveMine(true)}catch(e){}});
 // 代码回顾面板用的临时代码仓(按钮onclick只带下标)
 let _calCodes=[];
 function calPush(c){_calCodes.push(c);return _calCodes.length-1}
@@ -937,12 +1025,9 @@ function calSub(i){
   $('#subIn').value=code;localStorage.setItem(subKey(),code);
   go('today');toast('已放进作业批改框');
 }
-async function calDay(n){
-  const d=PLAN.days[n-1];if(!d)return;
-  const date=d.date,box=$('#calCode');
-  box.style.display='block';
-  box.innerHTML='<div class="loading">加载 D'+n+' 的代码存档...</div>';
-  box.scrollIntoView({behavior:'smooth'});
+async function calDayHtml(n){
+  const d=PLAN.days[n-1];if(!d)return '';
+  const date=d.date;
   _calCodes=[];
   let subs=[];
   try{const r=await api('/api/hw/submissions');subs=(r.subs&&r.subs[date])||[]}catch(e){}
@@ -969,16 +1054,32 @@ async function calDay(n){
     ${btns(calPush(x.code||''),`<button class="btn ghost" onclick="calSub(${_calCodes.length-1})">放进批改框</button>`)}
     <div style="margin-top:6px;font-size:13px;white-space:pre-wrap">${esc(x.feedback||'')}</div>
     </details>`).join(''):'<div class="muted">这天没有AI批改记录。</div>';
-  h+='<h3>每题存档('+Object.keys(mine).length+'条)</h3>';
+  h+=`<h3>每题存档(${Object.keys(mine).length}条 · 自动存档：切题/停笔1.2秒/离开页面各存一次)</h3>`;
   h+=Object.keys(mine).length?Object.keys(mine).sort((a,b)=>a.localeCompare(b,'zh')).map(q=>`
     <details class="hitem"><summary>${esc(q)} · ${esc((mine[q].t||'').replace('T',' '))}</summary>
     ${btns(calPush(mine[q].code||''))}
-    <pre class="cblk">${esc(mine[q].code||'')}</pre></details>`).join(''):'<div class="muted">这天还没有按题存档。到今日页教程汇总里点开题目【💾存我的代码】。</div>';
+    <pre class="cblk">${esc(mine[q].code||'')}</pre></details>`).join(''):'<div class="muted">这天还没有按题存档。到今日页教程汇总里点开题目【💾存我的代码】(切题时也会自动存)。</div>';
   h+='<h3>练习区当日草稿</h3>';
   h+=draft?`<pre class="cblk">${esc(draft)}</pre>${btns(calPush(draft))}`:'<div class="muted">没有草稿。</div>';
   h+='<h3>作业提交框草稿</h3>';
   h+=subDraft?`<pre class="cblk">${esc(subDraft)}</pre>${btns(calPush(subDraft),`<button class="btn ghost" onclick="calSub(${_calCodes.length-1})">放进批改框</button>`)}`:'<div class="muted">没有。作业框代码现在按天自动存，关页面不丢。</div>';
-  box.innerHTML=h;
+  return h;
+}
+// 进度页日历：点某天 → 代码回看面板
+async function calDay(n){
+  const box=$('#calCode');box.style.display='block';
+  box.innerHTML='<div class="loading">加载 D'+n+' 的代码存档...</div>';
+  box.scrollIntoView({behavior:'smooth'});
+  box.innerHTML=await calDayHtml(n);
+}
+// 大纲页：点某天 → 就地展开这天我写的代码
+async function showDayCode(n){
+  let box=$('#detailCode');
+  if(!box){box=document.createElement('div');box.id='detailCode';box.className='calCode';$('#detail').appendChild(box)}
+  box.style.display='block';
+  box.innerHTML='<div class="loading">加载 D'+n+' 的代码存档...</div>';
+  box.innerHTML=await calDayHtml(n);
+  box.scrollIntoView({behavior:'smooth'});
 }
 
 // ---------- 进度 ----------
