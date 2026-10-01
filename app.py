@@ -1048,7 +1048,8 @@ def api_digest_generate():
             f"作业：{pd['hw']['t']}——{pd['hw']['d']}\n\n"
             f"以下是抓取的教材正文：\n{src}")
     last_err = None
-    for attempt, temp in enumerate((0.3, 0.2)):
+    net_err = 0
+    for attempt, temp in enumerate((0.3, 0.2, 0.25, 0.15, 0.2)):
         try:
             reply, _u = ai_chat([{"role": "user", "content": user}],
                                 system=system, temperature=temp,
@@ -1079,7 +1080,15 @@ def api_digest_generate():
             })
         except Exception as e:
             last_err = e
-            if attempt == 0:
+            txt = "%s %s" % (type(e).__name__, e)
+            is_net = any(k in txt for k in (
+                "Connection", "connection", "aborted", "Reset", "reset",
+                "timed out", "Timeout", "Max retries", "RemoteDisconnected",
+                "Broken pipe", "SSLError", "10054", "10053", "Read timed"))
+            if is_net:
+                net_err += 1
+                time.sleep(min(3 * net_err, 12))
+            if attempt < 4:
                 continue
             return jsonify({"error": f"生成失败：{last_err}"}), 502
 
