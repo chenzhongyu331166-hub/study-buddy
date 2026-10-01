@@ -1036,6 +1036,10 @@ def api_digest_generate():
         "给出可直接照抄的最小示例代码；若任务写「精读某章节」，本汇总对应节即替代该章节，"
         "学生不需要点开链接；"
         "exercises 是「每日刷题」核心：每节2-3道、全天合计至少5道(少于5道视为不合格)，"
+        "题目必须与学生当天任务**一一对应且顺序一致**：第1题对应任务1、第2题对应任务2、"
+        "依次类推，全天题目总数不得少于当天任务条数(每条任务都要有一道题承载它)；"
+        "每道题的题干必须直接体现对应任务条目里的要求(照着任务要求出题)；"
+        "若出完与任务一一对应的题还有余量，再出加练题；"
         "其中至少1道必须直接实战当天任务(题干对应任务条目，照着任务要求写代码)；"
         "题型以动手写代码为主(给starter起手代码)，难度阶梯(基础→应用→边界)，"
         "题目要能用当天知识解决；"
@@ -1060,6 +1064,9 @@ def api_digest_generate():
             n_ex = sum(len(s.get("exercises") or []) for s in data["sections"])
             if n_ex < 5:
                 raise ValueError(f"exercises只有{n_ex}道，不足5道")
+            n_task = len(pd.get("tasks") or [])
+            if n_ex < n_task:
+                raise ValueError(f"exercises只有{n_ex}道，覆盖不了{n_task}条任务")
             data["_meta"] = {"date": date_str, "day": n,
                              "generated": datetime.datetime.now().isoformat(timespec="seconds"),
                              "source_file": md.name}

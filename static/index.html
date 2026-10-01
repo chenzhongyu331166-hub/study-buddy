@@ -465,16 +465,7 @@ function renderToday(){
   if(!pd){$('#taskList').innerHTML='<div class="muted">今天不在计划里，休息或补进度。</div>';
     $('#digestBox').innerHTML='<div class="muted">今天不在计划内，无汇总。</div>';
     $('#subHist').innerHTML='';return}
-  $('#taskList').innerHTML=pd.tasks.map((x,i)=>`
-    <label class="task ${t.entry.tasks[i]?'done':''}">
-      <input type="checkbox" data-i="${i}" ${t.entry.tasks[i]?'checked':''}>
-      <span class="tn">任务${i+1}</span><span class="tt">${x}</span></label>`).join('');
-  $$('#taskList input').forEach(c=>c.onchange=async()=>{
-    try{const r=await post('/api/checkin',{idx:+c.dataset.i,done:c.checked,date:viewDate});
-      TODAY.entry=r.entry;TODAY.stats=r.stats;_stateCache=null;renderToday();
-      if(r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b><br>'+r.new_achievements.map(a=>a.desc).join('<br>'));
-    }catch(e){alert(e.message);c.checked=!c.checked}
-  });
+  renderTaskList();
   $('#hwTitle').textContent=pd.hw.t;
   $('#hwDesc').textContent=pd.hw.d;
   $('#hwEg').textContent='期望：'+pd.hw.e;
@@ -501,6 +492,66 @@ function renderToday(){
   $('#resList').innerHTML=resHtml;$('#resList2').innerHTML=resHtml;
   loadDigest();
   loadSubs();
+}
+// ---------- 任务 ↔ 题 一一对应：题写了代码就自动勾任务，不用手动打钩 ----------
+function countQ(){                       // 当天教程汇总里的题目数(不含作业题)
+  if(typeof DIGEST==='undefined'||!DIGEST||!DIGEST.sections||DIGEST_DATE!==(TODAY&&TODAY.date))return 0;
+  return DIGEST.sections.reduce((n,s)=>n+((s.exercises||[]).length),0);
+}
+function qTaskIdx(q){                     // 题号'题N' → 任务下标；作业题返回null
+  const m=/^题(\d+)$/.exec(q||'');if(!m)return null;
+  const n=+m[1],pd=TODAY&&TODAY.plan_day;
+  if(!pd||n>pd.tasks.length)return null;
+  return n-1;
+}
+function meaningful(code){                // 去掉注释后仍有实质代码才算"做完了"
+  const body=(code||'').split('\n').filter(l=>!/^\s*(#|\/\/)/.test(l)).join('').trim();
+  return body.length>=15;
+}
+function jumpQ(kn){                       // 任务 → 对应题：展开并滚过去
+  const d=document.getElementById('qdet_'+kn);if(!d)return;
+  d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'});
+  d.style.boxShadow='0 0 0 2px var(--acc)';
+  setTimeout(()=>{d.style.boxShadow=''},1600);
+}
+function updateQBadges(){
+  const pd=TODAY&&TODAY.plan_day;if(!pd)return;
+  for(let kn=1;kn<=Math.max(pd.tasks.length,countQ());kn++){
+    const el=document.getElementById('qtag_'+kn);if(!el)continue;
+    const idx=qTaskIdx('题'+kn);
+    const done=idx!=null&&TODAY.entry&&TODAY.entry.tasks[idx];
+    el.innerHTML=`【任务${kn}】${esc(pd.tasks[idx].slice(0,22))}${done?' <b style="color:var(--ok)">✔已完成</b>':''}`;
+    el.style.opacity=done?'.65':'1';
+  }
+  const hw=document.getElementById('qhwbadge');
+  if(hw)hw.innerHTML=TODAY.entry&&TODAY.entry.hw?' <b style="color:var(--ok)">✔作业已完成</b>':'';
+}
+function renderTaskList(){
+  const t=TODAY,pd=t.plan_day;if(!pd)return;
+  $('#taskList').innerHTML=pd.tasks.map((x,i)=>{
+    const kn=i+1,done=t.entry.tasks[i],hasQ=kn<=countQ();
+    return `<label class="task ${done?'done':''}">
+      <input type="checkbox" data-i="${i}" ${done?'checked':''}>
+      <span class="tn">任务${kn}</span><span class="tt">${x}</span>
+      ${hasQ?`<span class="tag" style="cursor:pointer" onclick="jumpQ(${kn});event.preventDefault()">→ 题${kn}</span>`:''}
+      ${done?`<span class="tag" style="color:var(--ok)">✔ 已完成</span>`:''}</label>`;
+  }).join('');
+  $$('#taskList input').forEach(c=>c.onchange=async()=>{
+    try{const r=await post('/api/checkin',{idx:+c.dataset.i,done:c.checked,date:viewDate});
+      TODAY.entry=r.entry;TODAY.stats=r.stats;_stateCache=null;renderTaskList();updateQBadges();
+      if(r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b><br>'+r.new_achievements.map(a=>a.desc).join('<br>'));
+    }catch(e){alert(e.message);c.checked=!c.checked}
+  });
+}
+async function autoTick(idx,label){
+  if(!TODAY||!TODAY.entry||TODAY.entry.tasks[idx])return;   // 已勾过不重复
+  try{
+    const r=await post('/api/checkin',{idx:idx,done:true,date:viewDate});
+    TODAY.entry=r.entry;TODAY.stats=r.stats;_stateCache=null;
+    renderTaskList();updateQBadges();
+    toast('✔ 已自动勾上 <b>'+label+'</b>（这题写了代码就算做完，不用手动打钩）');
+    if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
+  }catch(e){}
 }
 $('#saveNote').onclick=async()=>{try{await post('/api/checkin',{hw_note:$('#hwNote').value,date:viewDate});toast('笔记已保存')}catch(e){alert(e.message)}};
 $('#askNoteBtn').onclick=()=>{
@@ -632,14 +683,18 @@ function renderDigest(r){
   const prev=DIGEST_DATE&&TODAY&&DIGEST_DATE!==TODAY.date;
   const banner=prev?`<div class="hintbox on" style="margin-bottom:8px">⏳ 提前预览 D${TODAY.day+1} 明天的汇总 · <a href="javascript:void(0)" onclick="backTodayDigest()">回到本学习日</a></div>`:'';
   let kn=0;
+  const pd0=TODAY&&TODAY.plan_day;
   const sectionsHtml=r.sections.map((s,i)=>`
     <div class="dsec">
       <h4>${i+1}. ${esc(s.kp)}</h4>
       <div>${esc(s.summary)}</div>
       <ul class="pts">${(s.points||[]).map(p=>'<li>'+esc(p)+'</li>').join('')}</ul>
-      ${(s.exercises||[]).map((ex,j)=>{kn++;ex._k=kn;return `
+      ${(s.exercises||[]).map((ex,j)=>{kn++;ex._k=kn;const idx=qTaskIdx('题'+kn);
+        const tDone=idx!=null&&TODAY.entry&&TODAY.entry.tasks[idx];
+        const badge=idx!=null?` <span class="tag" id="qtag_${kn}" style="cursor:pointer" onclick="jumpQ(${kn});event.preventDefault()">【任务${kn}】${esc(pd0.tasks[idx].slice(0,22))}${tDone?' <b style="color:var(--ok)">✔已完成</b>':''}</span>`:'';
+        return `
         <div class="exer">
-          <details><summary>题${kn}：${esc(ex.q)} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span></summary>
+          <details id="qdet_${kn}"><summary>题${kn}：${esc(ex.q)}${badge} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span></summary>
             <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn ghost" onclick="toggleAns(this)">👁 显示参考答案</button>
               <button class="btn ghost" onclick="loadStarter(${i},${j})">▶ 载入练习区开写</button>
@@ -656,15 +711,42 @@ function renderDigest(r){
     </div>`).join('');
   box.innerHTML=banner+(r.note?`<div class="muted" style="margin-bottom:8px">💡 ${esc(r.note)}</div>`:'')
     +(kn?`<div class="hintbox on" style="margin-bottom:8px">共 <b>${kn}</b> 道练习题(藏在各节里) · 点开题干 → 想先自己做就只看题，卡住了再点【显示参考答案】<br>
-    💾 <b>代码会自动存档</b>：载入某题后停笔 1.2 秒、切到下一题、切换学习日、关页面都会自动存。回看：进度页日历点这一天，或大纲页点某天 →【看这天我写的代码】。</div>`:'')
+    💾 <b>代码会自动存档</b>：载入某题后停笔 1.2 秒、切到下一题、切换学习日、关页面都会自动存。<br>
+    ☑️ <b>题和任务是绑定的</b>：题${pd0?`1~${Math.min(kn,pd0.tasks.length)}`:''}分别对应任务1~${pd0?Math.min(kn,pd0.tasks.length):0}，
+    这题写了代码就自动勾上对应任务，不用手动打钩；最下面的<b>课后作业</b>交批改＝作业完成。<br>
+    回看：进度页日历点这一天，或大纲页点某天 →【看这天我写的代码】。</div>`:'')
     +sectionsHtml
+    +hwExerciseHtml(pd0)
     +(r._meta?`<div class="muted">来源：${esc(r._meta.source_file||'')} · ${esc(r._meta.generated||'')}</div>`:'');
+  updateQBadges();
+  renderTaskList();          // 题目数确定后重画任务行(补上 →题N 跳转)
   const again=document.createElement('div');
   again.style.marginTop='10px';
   again.innerHTML='<button class="btn ghost" id="dgAgain">重新生成</button>';
   box.appendChild(again);
   $('#dgAgain').onclick=()=>genDigest();
   if(!prev){renderKp()}
+}
+// 课后作业 = 教程里的最后一道题（和练习题同款按钮），交批改即算作业完成
+function hwExerciseHtml(pd){
+  if(!pd||!pd.hw)return '';
+  const done=!!(TODAY.entry&&TODAY.entry.hw),date=dgDate();
+  return `<div class="exer" id="hwExWrap">
+    <details id="qdet_hw" ${done?'open':''}>
+      <summary>📌 课后作业（做完这题就等于勾上"作业完成"）：${esc(pd.hw.t)}
+        <span class="tag">作业</span><span id="mm_hw">${mineGet(date,'作业')?' 💾已存':''}</span><span id="qhwbadge">${done?' <b style="color:var(--ok)">✔作业已完成</b>':''}</span></summary>
+      <div style="margin-top:6px"><b>要求：</b>${esc(pd.hw.d)}</div>
+      <div class="muted" style="margin-top:4px"><b>期望：</b>${esc(pd.hw.e||'')}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" onclick="loadHwBlock()">▶ 载入练习区开写</button>
+        <button class="btn ghost" onclick="importHwExpect()">📤 期望效果导入练习区</button>
+        <button class="btn ghost" onclick="saveHwMine()">💾 存我的代码</button>
+        <button class="btn ghost" onclick="loadHwMine()">📥 载入我的代码</button>
+        <button class="btn ghost" onclick="askHw()">不会，问AI</button>
+        <button class="btn" onclick="go('today');setTimeout(()=>document.querySelector('#subBtn').click(),80)">📮 交给AI老师批改（＝完成作业）</button>
+      </div>
+      <div class="muted" style="margin-top:6px">代码写完后点【交给AI老师批改】，批改记录自动存档（批改几次存几次，最后一次就是交给老师的那版）。</div>
+    </details></div>`;
 }
 function toggleAns(btn){
   const box=btn.closest('details').querySelector('.ansbox');
@@ -861,6 +943,17 @@ $('#subBtn').onclick=async()=>{
     if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
     $('#subMark').style.display='';
     loadSubs();
+    // 交批改＝作业完成，自动勾上(以交给老师的最后一版为准)
+    if(!(TODAY.entry&&TODAY.entry.hw)){
+      try{
+        const r2=await post('/api/checkin',{hw:true,date:viewDate});
+        TODAY.entry=r2.entry;TODAY.stats=r2.stats;_stateCache=null;
+        $('#hwChk').checked=true;$('#hwBox').classList.add('done');
+        updateQBadges();
+        toast('✔ 已自动勾上 <b>作业完成</b>（以这次交给老师的版本为准）');
+        if(r2.new_achievements&&r2.new_achievements.length)toast('新成就：<b>'+r2.new_achievements.map(a=>a.name).join('、')+'</b>');
+      }catch(e){}
+    }
   }catch(e){fb.textContent='⚠ '+e.message}
   b.disabled=false;b.textContent='交给AI老师批改';
 };
@@ -942,6 +1035,9 @@ function mineSet(date,q,code){
   try{localStorage.setItem(mineKey(date,q),JSON.stringify(v))}catch(e){}
   fetch('/api/mysave',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({date:date,key:q,code:code})}).catch(()=>{}); // 服务器端点生效前静默
+  // 任务↔题绑定：这题写了实质代码就自动勾上对应任务(省得手动打钩造假)
+  const idx=qTaskIdx(q);
+  if(idx!=null&&meaningful(code))autoTick(idx,'任务'+(idx+1));
   return v;
 }
 function mineList(date){
