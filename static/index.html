@@ -329,6 +329,11 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     </div>
     <pre id="runOut" class="runout"></pre>
     <div class="hintbox" id="hintBox"></div>
+    <div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px">
+      <b style="font-size:13px">📁 今天运行真实创建的文件</b>
+      <div class="muted" style="font-size:12px">学习台是真跑真文件系统：你的代码里 <code>open('xxx','w').write(...)</code> 跑完，文件就在下面这个目录里真实出现了（不是内存模拟）。看不到就说明代码还没写到写文件那步。</div>
+      <div id="runFiles" class="muted" style="margin-top:6px">还没有运行过。点【▶ 运行】后再回来看。</div>
+    </div>
   </div>
 
   <div class="card">
@@ -350,6 +355,26 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     </div>
     <div class="fb" id="subFb"></div>
     <div class="subhist" id="subHist"></div>
+  </div>
+
+  <div class="card">
+    <h2>本地项目 · 交给AI审阅 <span class="tag">环境日起在 VS Code 里写代码</span></h2>
+    <div class="muted" style="margin-bottom:8px">你在自己电脑上（VS Code）写的项目，<b>放进下面这个根目录下的一个文件夹</b>，选它 → AI 就能审阅<b>整个文件夹</b>（文件结构 + 全部源码 + 对照当天作业要求）。零上传：学习台就跑在这台电脑上，直接读。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span class="muted">根目录</span>
+      <input type="text" id="workRoot" style="flex:1;min-width:200px" placeholder="D:\我的作品">
+      <button class="btn ghost" onclick="workSaveRoot()">保存目录</button>
+      <button class="btn ghost" onclick="workLoadConfig()">刷新</button>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span class="muted">项目</span>
+      <select id="workProj" style="min-width:180px"></select>
+      <button class="btn ghost" onclick="workFiles()">看文件列表</button>
+      <button class="btn" onclick="workReview()">📥 交给AI审阅整个项目</button>
+    </div>
+    <div id="workMsg" class="muted" style="margin-top:8px"></div>
+    <div id="workFiles" style="margin-top:6px"></div>
+    <div class="fb" id="workFb"></div>
   </div>
 </section>
 
@@ -492,6 +517,8 @@ function renderToday(){
   $('#resList').innerHTML=resHtml;$('#resList2').innerHTML=resHtml;
   loadDigest();
   loadSubs();
+  loadRunFiles();
+  workLoadConfig();
 }
 // ---------- 任务 ↔ 题 一一对应：题写了代码就自动勾任务，不用手动打钩 ----------
 function countQ(){                       // 当天教程汇总里的题目数(不含作业题)
@@ -595,8 +622,9 @@ async function startRun(){
   $('#hintBox').classList.remove('on');
   const wb=$('#warnBox');wb.classList.remove('on');
   try{
-    const r=await post('/api/run',{code,stdin:$('#stdinIn').value});
-    RUN_SID=r.sid;
+const r=await post('/api/run',{code,stdin:$('#stdinIn').value});
+   RUN_SID=r.sid;
+   loadRunFiles();                     // 运行完立刻刷新"真实创建的文件"列表
     if(r.warnings&&r.warnings.length){wb.classList.add('on');wb.innerHTML='<b>⚠ 运行前提醒：</b><br>'+r.warnings.map(x=>'· '+esc(x)).join('<br>')}
     if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
     $('#runOut').style.display='block';
@@ -1176,6 +1204,63 @@ async function showDayCode(n){
   box.innerHTML='<div class="loading">加载 D'+n+' 的代码存档...</div>';
   box.innerHTML=await calDayHtml(n);
   box.scrollIntoView({behavior:'smooth'});
+}
+
+// ---------- 本地项目审阅 + 运行产生的文件 ----------
+async function loadRunFiles(){
+  try{
+    const r=await api('/api/runfiles');
+    const fs=r.files||[];
+    if(!fs.length){$('#runFiles').innerHTML='<span class="muted">还没有文件。代码里写 <code>with open("data.json","w",encoding="utf-8") as f: f.write("{}")</code> 再点运行，这里就会列出它。</span>';return}
+    _calCodes=_calCodes||[];
+    $('#runFiles').innerHTML=fs.map((f,i)=>`<div style="margin-top:4px;font-size:13px">
+      <b>${esc(f.name)}</b> <span class="muted">${f.size} 字节 · ${esc(f.mtime)}</span>
+      ${f.text?`<button class="btn ghost" onclick="copyText(${calPush(f.text)})">复制</button>
+        <button class="btn ghost" onclick="runFileOpen(${calPush(f.text)})">载入练习区</button>
+        <details style="margin-top:4px"><summary class="muted">看内容</summary>
+          <pre class="cblk">${esc(f.text)}</pre></details>`:''}</div>`).join('');
+  }catch(e){$('#runFiles').innerHTML='<span class="muted">'+esc(e.message)+'</span>'}
+}
+function runFileOpen(idx){
+  const ta=$('#codeIn');ta.value=_calCodes[idx]||'';
+  localStorage.setItem(ckNow(),ta.value);go('today');toast('已载入练习区');
+}
+async function workLoadConfig(){
+  try{
+    const r=await api('/api/work/config');
+    $('#workRoot').value=r.root;
+    const sel=$('#workProj');
+    sel.innerHTML=r.projects.length?r.projects.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}（${p.files}个文件）</option>`).join(''):'<option value="">（根目录下还没有项目文件夹）</option>';
+    $('#workMsg').innerHTML=r.exists?'':`<span style="color:var(--warn)">根目录不存在：${esc(r.root)} —— 先建这个文件夹，或在上面改成你实际的目录</span>`;
+  }catch(e){$('#workMsg').innerHTML='<span style="color:var(--bad)">'+esc(e.message)+'</span>'}
+}
+async function workSaveRoot(){
+  try{
+    await post('/api/work/config',{root:$('#workRoot').value.trim()});
+    toast('根目录已保存');workLoadConfig();
+  }catch(e){toast(e.message)}
+}
+function workFiles(){
+  const p=$('#workProj').value;
+  if(!p){toast('先在上面选一个项目文件夹');return}
+  api('/api/work/files?project='+encodeURIComponent(p)).then(r=>{
+    const fs=r.files||[];
+    $('#workFiles').innerHTML=`<div class="muted">目录 <code>${esc(r.dir)}</code> · ${fs.length} 个可审阅文件 · 共 ${r.total} 字符</div>`
+      +'<div class="cblk">'+fs.map(f=>esc(f.path)+'  ('+f.size+' 字符)').join('\n')+'</div>';
+    toast('找到 '+fs.length+' 个文件');
+  }).catch(e=>toast(e.message));
+}
+async function workReview(){
+  const p=$('#workProj').value;
+  if(!p){toast('先在上面选一个项目文件夹');return}
+  const fb=$('#workFb');fb.style.display='block';fb.textContent='AI 正在读整个项目并对照作业要求审阅，约1分钟...';
+  $('#workMsg').textContent='';
+  try{
+    const r=await post('/api/work/review',{project:p,day:(TODAY&&TODAY.day)||0});
+    fb.innerHTML=r.reply;
+    fb.scrollIntoView({behavior:'smooth'});
+    $('#workMsg').innerHTML=`审阅完成：${esc(r.project)} · ${r.files.length} 个文件 / ${r.total} 字符 · 模型 ${esc(r.model||'')}`;
+  }catch(e){fb.textContent='⚠ '+e.message}
 }
 
 // ---------- 进度 ----------

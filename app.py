@@ -964,6 +964,170 @@ def api_mysave():
     return jsonify({"saves": ms.get(date_str, {}) if date_str else ms})
 
 
+@app.route("/api/runfiles")
+def api_runfiles():
+    """列出学生在练习区运行时真实创建的文件（证明 open(...,'w') 真的建出了文件）"""
+    files = []
+    if RUN_DIR.exists():
+        for f in sorted(RUN_DIR.iterdir(), key=lambda x: -(x.stat().st_mtime if x.exists() else 0)):
+            if not f.is_file() or f.suffix == ".py" or f.name.startswith("s_"):
+                continue
+            try:
+                size = f.stat().st_size
+                txt = ""
+                if f.suffix.lower() in (".md", ".txt", ".json", ".csv", ".py"):
+                    txt = f.read_text(encoding="utf-8", errors="replace")[:20000]
+            except Exception:
+                txt = ""
+            files.append({"name": f.name, "size": size,
+                          "mtime": datetime.datetime.fromtimestamp(
+                              f.stat().st_mtime).strftime("%m-%d %H:%M"),
+                          "text": txt})
+    return jsonify({"dir": str(RUN_DIR), "files": files})
+
+
+# ---------- 本地项目审阅（环境日起在真实环境写代码，把整个文件夹交AI看） ----------
+# 设计成"可配置根目录"而非写死路径，别人拿到这个项目也能用自己的目录。
+WORK_CFG = ROOT / "data" / "config.json"
+DEFAULT_WORK_ROOT = r"D:\我的作品"
+REVIEW_PATH = ROOT / "data" / "reviews.json"
+WORK_EXTS = {".py", ".md", ".txt", ".json", ".csv", ".toml", ".cfg", ".ini", ".yaml", ".yml"}
+WORK_SKIP = {".git", "__pycache__", "venv", ".venv", "env", "node_modules", ".idea", ".vscode"}
+MAX_FILES = 30
+MAX_TOTAL = 60000
+
+
+def work_root():
+    cfg = load_json(WORK_CFG, {})
+    v = str(cfg.get("work_root") or "").strip() or DEFAULT_WORK_ROOT
+    return Path(v)
+
+
+def _under(child, parent):
+    try:
+        child.resolve().relative_to(parent.resolve())
+        return True
+    except Exception:
+        return False
+
+
+@app.route("/api/work/config", methods=["GET", "POST"])
+def api_work_config():
+    if request.method == "POST":
+        body = request.get_json(force=True, silent=True) or {}
+        v = str(body.get("root") or "").strip()
+        if v:
+            cfg = load_json(WORK_CFG, {})
+            cfg["work_root"] = v
+            save_json(WORK_CFG, cfg)
+    r = work_root()
+    projects = []
+    if r.exists() and r.is_dir():
+        for p in sorted(r.iterdir(), key=lambda x: x.name.lower()):
+            if p.is_dir() and not p.name.startswith('.'):
+                files = [x for x in p.rglob('*') if x.is_file()]
+                projects.append({"name": p.name, "files": len(files)})
+    return jsonify({"root": str(r), "exists": r.exists() and r.is_dir(),
+                    "projects": projects})
+
+
+def _collect_project(pdir):
+    out, total = [], 0
+    for f in sorted(pdir.rglob('*')):
+        if len(out) >= MAX_FILES or total >= MAX_TOTAL:
+            break
+        if not f.is_file() or f.suffix.lower() not in WORK_EXTS:
+            continue
+        if any(part in WORK_SKIP for part in f.parts):
+            continue
+        try:
+            txt = f.read_text(encoding='utf-8', errors='replace')
+        except Exception:
+            continue
+        if len(txt) > 20000:
+            txt = txt[:20000] + "\n... (超长，已截断)"
+        out.append({"path": str(f.relative_to(pdir)).replace('\\', '/'), "size": len(txt)})
+        total += len(txt)
+    return out, total
+
+
+def _project_dir(name):
+    r = work_root()
+    pdir = (r / name) if name else None
+    if not pdir or not pdir.is_dir() or not _under(pdir, r):
+        return None
+    return pdir
+
+
+@app.route("/api/work/files")
+def api_work_files():
+    name = (request.args.get("project") or "").strip()
+    pdir = _project_dir(name)
+    if pdir is None:
+        return jsonify({"error": "项目不存在，或路径不在工作根目录内"}), 400
+    files, total = _collect_project(pdir)
+    return jsonify({"project": name, "dir": str(pdir), "files": files, "total": total})
+
+
+@app.route("/api/work/review", methods=["POST"])
+def api_work_review():
+    body = request.get_json(force=True, silent=True) or {}
+    name = str(body.get("project") or "").strip()
+    pdir = _project_dir(name)
+    if pdir is None:
+        return jsonify({"error": "项目不存在，或路径不在工作根目录内"}), 400
+    files, total = _collect_project(pdir)
+    if not files:
+        return jsonify({"error": "这个项目里没有可审阅的文本文件(.py/.md/.json 等)"}), 400
+    try:
+        n = int(body.get("day") or 0)
+    except Exception:
+        n = 0
+    pd = DAYS.get(n) or {}
+    hw = pd.get("hw") or {}
+    hwline = ""
+    if hw:
+        hwline = ("当天(D%s)的作业要求：《%s》\n要求：%s\n期望：%s\n"
+                  % (n, hw.get('t', ''), hw.get('d', ''), hw.get('e', '')))
+    tasks = "\n".join("- " + t for t in (pd.get("tasks") or []))
+    parts = []
+    for f in files:
+        txt = (pdir / f['path']).read_text(encoding='utf-8', errors='replace')
+        parts.append("===== %s =====\n%s" % (f['path'], txt))
+    tree = "\n".join("- " + f['path'] for f in files)
+    system = ("你是学习台的代码审阅老师。用户在自己的电脑上用真实编辑器写了项目，"
+              "现在把整个项目文件夹交给你审阅。\n"
+              "输出中文，用 Markdown，分这几块：\n"
+              "1) **需求对照**：逐条对照上面的作业要求/任务，指出做到了什么、漏了什么；\n"
+              "2) **结构与调用关系**：文件怎么分工、谁调用谁、模块化是否真的做到了；\n"
+              "3) **问题清单**：按「严重/一般/建议」分级，每条给出文件名+具体位置+怎么改；\n"
+              "4) **亮点**：具体指出哪个设计写得好（不要泛泛夸奖）；\n"
+              "5) **下一步**：给他一到两个最值得先改的点。\n"
+              "要求：只依据给出的文件内容判断，不要编造没写的功能；"
+              "指出问题时给出可直接照抄的修正代码片段。")
+    user = ("项目目录结构：\n%s\n\n%s%s当天任务：\n%s\n\n"
+            "以下是这个项目的全部文件内容：\n\n%s"
+            % (tree, hwline, ("当天任务：\n%s\n\n" % tasks) if tasks else "", tasks,
+               "\n\n".join(parts)))
+    try:
+        reply, usage = ai_chat([{"role": "user", "content": user}],
+                               system=system, temperature=0.3, max_tokens=4000)
+    except Exception as e:
+        return jsonify({"error": f"AI 调用失败：{e}"}), 502
+    with _LOCK:
+        rv = load_json(REVIEW_PATH, {})
+        rv.setdefault(name, []).append({
+            "t": datetime.datetime.now().isoformat(timespec="seconds"),
+            "day": n, "files": [f['path'] for f in files], "total": total,
+            "reply": reply,
+        })
+        rv[name] = rv[name][-20:]
+        save_json(REVIEW_PATH, rv)
+    return jsonify({"project": name, "dir": str(pdir), "files": files,
+                    "total": total, "reply": reply,
+                    "model": current_model()})
+
+
 # ---------- AI教程汇总：读已抓取正文，按知识点分节+嵌练习题 ----------
 DIGEST_DIR = ROOT / "data" / "digests"
 
@@ -1044,6 +1208,14 @@ def api_digest_generate():
         "题型以动手写代码为主(给starter起手代码)，难度阶梯(基础→应用→边界)，"
         "题目要能用当天知识解决；"
         "starter 必须是能直接放进编辑器运行的 Python 片段(没有合适题时给空串)；"
+        "**动手优先**：凡任务涉及新建/保存文件、读写文件、模块、import、运行程序，"
+        "必须在对应节里先给出**在她自己电脑上一步步怎么动手**的具体操作"
+        "(Windows 下用什么编辑器打开哪个文件夹、新建哪个文件、文件叫什么名、"
+        "在终端敲什么命令、文件建完去哪里看、需要几个文件之间怎么 import)，"
+        "不要只讲语法；"
+        "若当天任务需要多个文件，教程必须明确列出要建哪几个文件、分别叫什么、"
+        "谁 import 谁，并说明项目文件夹该建在哪(如 D:\\我的作品\\xxx\\)；"
+        "并告诉她写完怎么把整个项目文件夹交给AI审阅；"
         "语言全中文；总长控制在2400字以内。"
     )
     user = (f"D{n}《{pd['title']}》\n当天知识点：{'、'.join(pd['kp'])}\n"
