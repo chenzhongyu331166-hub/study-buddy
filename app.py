@@ -59,6 +59,32 @@ assert PLAN, "plan.json 缺失，请先运行 build_plan.py"
 
 DAYS = {d["day"]: d for d in PLAN["days"]}
 STAGES = PLAN["stages"]
+
+
+# ---------- 双线（考研线 / PM线）：D1-D43 共用，从 D44 起可一键切换 ----------
+def current_track(st=None):
+    st = st if st is not None else get_state()
+    t = str((st.get("track") or "kaoyan")).strip()
+    return t if t in ("kaoyan", "pm") else "kaoyan"
+
+
+def apply_track(day, st=None):
+    """按当前路线取当天的任务/知识点/作业/资源；考研线=原内容，PM线=day['pm']"""
+    if not day:
+        return day
+    if current_track(st) != "pm":
+        return day
+    alt = day.get("pm")
+    if not alt:
+        return day
+    out = dict(day)
+    out["tasks"] = alt.get("tasks") or day["tasks"]
+    out["kp"] = alt.get("kp") or day["kp"]
+    out["hw"] = alt.get("hw") or day["hw"]
+    out["res"] = alt.get("res") or day["res"]
+    out["title"] = str(day.get("title", "")) + " · PM线"
+    out["stage_name"] = (PLAN.get("tracks", {}).get("pm", {}) or {}).get("name")
+    return out
 START = datetime.date.fromisoformat(PLAN["meta"]["start"])
 TOTAL = PLAN["meta"]["total_days"]
 
@@ -262,13 +288,16 @@ def api_today():
     n = day_index(now)
     entry = day_entry(st, now)
     stats = compute_stats(st)
-    plan_day = DAYS.get(n)
+    plan_day = apply_track(DAYS.get(n), st)
     resp = {
         "date": now,
         "day": n,
         "plan_day": plan_day,
         "entry": entry,
         "stats": stats,
+        "track": current_track(st),
+        "tracks": PLAN.get("tracks", {}),
+        "can_switch": bool(n >= (PLAN.get("tracks", {}).get("switchable_from") or 999)),
         "achievements": achievement_cards(st, stats),
         "earned_now": earned(st, stats),
     }
@@ -280,7 +309,7 @@ def api_today():
         # 当天是否已生成教程汇总
         resp["digest_ready"] = _digest_path(now).exists()
     if n and n < TOTAL:
-        resp["tomorrow"] = DAYS[n + 1]
+        resp["tomorrow"] = apply_track(DAYS[n + 1], st)
         # today_fetched: 今天的资料(昨天当"明天"抓的)；tomorrow_fetched: 明天的资料已备好
         resp["today_fetched"] = now in st.get("fetch", {})
         tm_date = DAYS[n + 1]["date"]
@@ -884,7 +913,7 @@ def api_hw_submit():
         return jsonify({"error": "代码太长(上限8000字符)，先精简或分段提交"}), 400
     date_str = str(body.get("date") or "").strip() or default_study_date(get_state())
     n = day_index(date_str)
-    pd = DAYS.get(n)
+    pd = apply_track(DAYS.get(n), get_state())
     if not pd:
         return jsonify({"error": "所选日期不在84天计划内，找不到要批改的作业"}), 400
     system = (
@@ -962,6 +991,32 @@ def api_mysave():
     date_str = (request.args.get("date") or "").strip()
     ms = load_json(MYSAVE_PATH, {})
     return jsonify({"saves": ms.get(date_str, {}) if date_str else ms})
+
+
+@app.route("/api/track", methods=["POST"])
+def api_track():
+    """切换路线：kaoyan(408考研线) / pm(产品经理线)。D44 起可用。"""
+    body = request.get_json(force=True, silent=True) or {}
+    t = str(body.get("track") or "").strip()
+    if t not in ("kaoyan", "pm"):
+        return jsonify({"error": "路线只能是 kaoyan 或 pm"}), 400
+    n = int(body.get("day") or 0)
+    switch_from = PLAN.get("tracks", {}).get("switchable_from") or 999
+    if n and n < switch_from:
+        return jsonify({"error": f"D{switch_from} 之前两条线内容相同，无需切换"}), 400
+    with _LOCK:
+        st = get_state()
+        st["track"] = t
+        save_state(st)
+    return jsonify({"track": t, "from_day": switch_from,
+                    "name": (PLAN.get("tracks", {}).get(t) or {}).get("name")})
+
+
+@app.route("/api/track")
+def api_track_get():
+    st = get_state()
+    return jsonify({"track": current_track(st), "tracks": PLAN.get("tracks", {}),
+                    "can_switch": True})
 
 
 @app.route("/api/runfiles")
@@ -1083,7 +1138,7 @@ def api_work_review():
         n = int(body.get("day") or 0)
     except Exception:
         n = 0
-    pd = DAYS.get(n) or {}
+    pd = apply_track(DAYS.get(n), get_state()) or {}
     hw = pd.get("hw") or {}
     hwline = ""
     if hw:
@@ -1185,8 +1240,11 @@ def api_digest_generate():
     if not md or not md.exists():
         return jsonify({"error": "今天还没有抓取正文，先去资源页点抓取，再来生成汇总"}), 400
 
-    pd = DAYS[n]
+    pd = apply_track(DAYS[n], get_state())
     src = md.read_text(encoding="utf-8", errors="replace")[:14000]
+    trk = (PLAN.get("tracks", {}).get(current_track()) or {})
+    trackline = ("\n【当前学习路线】%s（%s）——请按这条线的要求组织内容。\n"
+                 % (trk.get("name", current_track()), trk.get("desc", "")))
     system = (
         "你是学习台的教程整理老师，把学生抓取的教材正文整理成「今日教程汇总」。\n"
         "输出必须是纯JSON(不要任何多余文字、不要markdown围栏)，结构：\n"
@@ -1219,6 +1277,7 @@ def api_digest_generate():
         "语言全中文；总长控制在2400字以内。"
     )
     user = (f"D{n}《{pd['title']}》\n当天知识点：{'、'.join(pd['kp'])}\n"
+            + trackline +
             f"当天任务(汇总必须支撑逐条完成)：\n"
             + "\n".join(f"{i}. {t}" for i, t in enumerate(pd['tasks'], 1)) + "\n"
             f"作业：{pd['hw']['t']}——{pd['hw']['d']}\n\n"
@@ -1322,7 +1381,7 @@ def extract_text(html, limit=6000):
 
 def do_fetch(n, date_str):
     """抓某计划日的全部资源正文，写 resources/Dn_date.md 并记入state。返回items。"""
-    plan_day = DAYS[n]
+    plan_day = apply_track(DAYS[n], get_state())
     RES_DIR.mkdir(parents=True, exist_ok=True)
     items = []
     lines = [f"# D{n} {plan_day['title']} 学习资料存档",

@@ -483,6 +483,7 @@ function stageOf(d){return PLAN.stages.find(s=>{const[a,b]=s.range.slice(1).spli
 
 function renderToday(){
   const t=TODAY, pd=t.plan_day, st=stageOf(t.day);
+  if(t.track)trackNow=t.track;
   $('#hdSub').textContent=`D${t.day}/84 · ${t.date} · 连续${t.stats.streak}天 · 总进度${t.stats.percent}%`;
   $('#todayHead').innerHTML=`<h2>D${t.day} ${pd?pd.title:'计划外日期(不在84天内)'}</h2>
     <div>${pd?`<span class="tag">${st?st.range+' '+st.name:''}</span><span class="tag">阶段目标：${st?st.goal:''}</span>`:''}</div>
@@ -553,9 +554,25 @@ function updateQBadges(){
   const hw=document.getElementById('qhwbadge');
   if(hw)hw.innerHTML=TODAY.entry&&TODAY.entry.hw?' <b style="color:var(--ok)">✔作业已完成</b>':'';
 }
+async function setTrack(t){
+  if(!confirm('切换到「'+(t==='pm'?'PM线(工程·产品·作品集)':'考研线(408四门)')+'」？\n已完成的勾选会保留，未完成的天数按新任务重新开始。'))return;
+  try{
+    await post('/api/track',{track:t,day:(TODAY&&TODAY.day)||0});
+    trackNow=t;
+    toast('已切到 '+((TODAY.tracks&&TODAY.tracks[t]||{}).name||t)+'，重新加载今天的教程');
+    setTimeout(()=>location.reload(),600);
+  }catch(e){toast(e.message)}
+}
 function renderTaskList(){
   const t=TODAY,pd=t.plan_day;if(!pd)return;
-  $('#taskList').innerHTML=pd.tasks.map((x,i)=>{
+  const trk=(TODAY.tracks&&TODAY.tracks[trackNow]||{});
+  const sw=(TODAY.can_switch&&(TODAY.tracks||{}).switchable_from);
+  const switchHtml=(TODAY.can_switch)?`<div class="hintbox on" style="margin:0 0 8px">
+      <b>路线：${esc(trk.name||'考研线')}</b> — ${esc(trk.desc||'')}
+      <div style="margin-top:6px">${(TODAY.tracks&&TODAY.tracks.kaoyan)?`<button class="btn ghost ${trackNow==='kaoyan'?'good':''}" onclick="setTrack('kaoyan')">考研线(408)</button>`:''}${(TODAY.tracks&&TODAY.tracks.pm)?`<button class="btn ghost ${trackNow==='pm'?'good':''}" onclick="setTrack('pm')">PM线(工程·产品·作品集)</button>`:''}
+      <div class="muted" style="margin-top:4px;font-size:12px">D${TODAY.tracks&&TODAY.tracks.switchable_from||44} 之前两条线内容完全相同，随便走；到这里才需要你决定考研还是就业。现在不急，可以先读这一天的内容再决定。</div>
+    </div>`:(TODAY.tracks&&TODAY.tracks.switchable_from)?`<div class="muted" style="margin:0 0 6px;font-size:12px">当前路线：${esc(trk.name||'考研线')}（D${TODAY.tracks.switchable_from} 起可一键切换）</div>`:'';
+  $('#taskList').innerHTML=switchHtml+pd.tasks.map((x,i)=>{
     const kn=i+1,done=t.entry.tasks[i],hasQ=kn<=countQ();
     return `<label class="task ${done?'done':''}">
       <input type="checkbox" data-i="${i}" ${done?'checked':''}>
@@ -890,6 +907,7 @@ function askKp(i){
 // 默认=7点规则日(早上7点前仍算前一天)；可手动提前写明天/拖后补昨天，
 // 任务勾选、作业笔记、AI批改、打卡标记、教程汇总全都跟随所选学习日。
 let viewDate=null;
+let trackNow='kaoyan';     // 当前路线：kaoyan(408考研线) / pm(产品经理线)，D44 起可切
 let DEFAULT_DATE=null; // 后端定的默认学习日(含缺勤顺延规则)，回默认/提示都以它为准
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function defaultDateStr(){
