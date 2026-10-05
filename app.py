@@ -6,6 +6,7 @@ import json
 import os
 import re
 import codecs
+import shutil
 import datetime
 import threading
 import time
@@ -488,16 +489,27 @@ def ai_chat(messages, system=None, temperature=0.7, max_tokens=2048, thinking=Fa
     payload = {"model": model, "messages": msgs,
                "temperature": temperature, "max_tokens": max_tokens,
                "enable_thinking": bool(thinking)}
-    r = req.post(cfg["base"] + "/chat/completions",
-                 json=payload,
-                 headers={"Authorization": "Bearer " + cfg["key"],
-                          "Content-Type": "application/json"},
-                 timeout=180)
-    if r.status_code != 200:
-        raise RuntimeError(f"AI接口 {r.status_code}: {r.text[:300]}")
-    data = r.json()
-    content = data["choices"][0]["message"]["content"]
-    return content, data.get("usage", {})
+    # 魔搭偶发 SSL EOF / 连接重置(10054)，一次失败就报错太脆弱：退避重试 3 次
+    last = None
+    for i, wait in enumerate((0, 1.5, 4)):
+        if wait:
+            time.sleep(wait)
+        try:
+            r = req.post(cfg["base"] + "/chat/completions",
+                         json=payload,
+                         headers={"Authorization": "Bearer " + cfg["key"],
+                                  "Content-Type": "application/json"},
+                         timeout=180)
+            if r.status_code != 200:
+                last = RuntimeError("AI接口 %s: %s" % (r.status_code, r.text[:300]))
+                continue
+            data = r.json()
+            content = data["choices"][0]["message"]["content"]
+            return content, data.get("usage", {})
+        except Exception as e:
+            last = e
+            continue
+    raise last if last else RuntimeError("AI 调用失败")
 
 
 @app.route("/api/ai", methods=["POST"])
@@ -1023,6 +1035,200 @@ def api_track_get():
     st = get_state()
     return jsonify({"track": current_track(st), "tracks": PLAN.get("tracks", {}),
                     "can_switch": True})
+
+
+# ---------- 在真实环境(VS Code)做题：建题文件 / 提交真实文件给AI ----------
+# 用户明确要求：取消在网页里写代码，题目以注释形式给，她在自己电脑的 VS Code
+# 里建文件写；每次作业是一个真实文件；AI 老师直接读这个文件。
+QCODE_PATH = ROOT / "data" / "qcodes.json"       # 题号 -> {file, created, note}
+
+
+def _safe_name(s):
+    """把标题变成安全的目录名：去掉 Windows 非法字符(: \\ / * ? " < > |)与标点"""
+    s = str(s or "")
+    s = re.sub(r'[\\/:*?"<>|\r\n\t]', " ", s)      # 非法字符先换空格
+    s = re.sub(r'[，。；、！？（）()\[\]{}<>《》""\'\'`~@#$%^&+=]', " ", s)
+    s = re.sub(r"\s+", " ", s).strip().rstrip(".")
+    s = s.replace(" ", "-")
+    return s[:40] or "day"
+
+
+def _qcode_path(pdir, fname, title, body, day):
+    """在项目目录里建一个题文件；已存在则不覆盖，只在缺题目注释时补写。"""
+    pdir.mkdir(parents=True, exist_ok=True)
+    f = pdir / fname
+    if f.exists():
+        try:
+            old = f.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            old = ""
+        # 已写自己的代码了 → 绝不动它，只把题目注释补到文件最前面(若还没有)
+        if "# ▶ 题目" not in old:
+            f.write_text(body + "\n" + old, encoding="utf-8")
+        return f, True
+    f.write_text(body, encoding="utf-8")
+    return f, False
+
+
+def _qcode_body(kind, head, req, expect, starter, title):
+    lines = ["# ▶ 题目 %s（%s）" % (head, kind),
+             "# 来源：84天速成CS · D%s · %s" % (title[0], title[1]),
+             "#", "# 要求：%s" % req]
+    if expect:
+        lines.append("# 期望：%s" % expect)
+    if starter:
+        lines += ["#", "# 起手代码(可以删掉自己重写)：", starter.rstrip()]
+    lines += ["#", "# ↓↓↓ 你的代码写在这行下面 ↓↓↓", "", "", "# ▶ END"]
+    return "\n".join(lines) + "\n"
+
+
+@app.route("/api/q/start")
+def api_q_start():
+    """在项目目录里建好题文件并用 VS Code 打开（不覆盖你已写的代码）"""
+    date_str = (request.args.get("date") or "").strip() or default_study_date(get_state())
+    n = day_index(date_str)
+    if n is None:
+        return jsonify({"error": "日期不在计划内"}), 400
+    qn = int(request.args.get("q") or 0)
+    r = work_root()
+    proj = (request.args.get("project") or "").strip()
+    if proj and _project_dir(proj):
+        pdir = _project_dir(proj)
+    else:                                  # 没指定就用 D<n>-<标题> 自动建
+        base = DAYS[n].get("title") or "day%d" % n
+        pdir = r / ("D%d-%s" % (n, _safe_name(base)))
+    pd = apply_track(DAYS.get(n), get_state()) or {}
+    if qn == 0:                            # 作业文件
+        hw = pd.get("hw") or {}
+        body = _qcode_body("课后作业", "hw", hw.get("d", ""), hw.get("e", ""),
+                           "", (n, pd.get("title", "")))
+        fname = "homework.py"
+        kind = "作业"
+    else:
+        dg = load_json(_digest_path(date_str), {})
+        secs = dg.get("sections") or []
+        item, si = None, 0
+        cnt = 0
+        for i, s in enumerate(secs):
+            for ex in (s.get("exercises") or []):
+                cnt += 1
+                if cnt == qn:
+                    item, si = ex, i
+                    break
+            if item:
+                break
+        if not item:
+            return jsonify({"error": "第%s题不存在(先在教程汇总里生成题目)" % qn}), 400
+        kp = secs[si].get("kp", "")
+        body = _qcode_body("练习题", str(qn), item.get("q", ""), "",
+                           item.get("starter") or "", (n, pd.get("title", "")))
+        fname = "q%s.py" % qn
+        kind = "题%s" % qn
+    f, existed = _qcode_path(pdir, fname, kind, body, n)
+    opened = False
+    try:
+        if shutil.which("code"):
+            subprocess.Popen(["code", str(f)],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            opened = True
+    except Exception:
+        pass
+    rec = load_json(QCODE_PATH, {})
+    rec.setdefault(date_str, {})[kind] = {"file": str(f), "project": pdir.name,
+                                          "existed": existed}
+    save_json(QCODE_PATH, rec)
+    return jsonify({"ok": 1, "file": str(f), "dir": str(pdir), "project": pdir.name,
+                    "existed": existed, "vscode_opened": opened,
+                    "note": ("文件已存在，没有覆盖你的代码" if existed else "已新建题文件")})
+
+
+@app.route("/api/q/submit", methods=["POST"])
+def api_q_submit():
+    """读你在 VS Code 里写的真实文件，交给 AI 批改；AI 判定任务完成则自动勾上"""
+    body = request.get_json(force=True, silent=True) or {}
+    date_str = str(body.get("date") or "").strip() or default_study_date(get_state())
+    n = day_index(date_str)
+    if n is None:
+        return jsonify({"error": "日期不在计划内"}), 400
+    fname = str(body.get("file") or "").strip()
+    if not fname:
+        return jsonify({"error": "缺少file(请先用【在VS Code开始这题】生成文件)"}), 400
+    r = work_root()
+    target = Path(fname)
+    if not target.is_absolute():
+        proj = str(body.get("project") or "").strip()
+        base = _project_dir(proj) if proj else r
+        if base is None:
+            return jsonify({"error": "项目不在工作根目录内"}), 400
+        target = base / fname
+    if not _under(target, r) or not target.is_file():
+        return jsonify({"error": "找不到文件：%s（先在 VS Code 里保存）" % target}), 400
+    code = target.read_text(encoding="utf-8", errors="replace")
+    if len(code.strip()) < 20:
+        return jsonify({"error": "这个文件几乎是空的，先写代码再提交"}), 400
+    pd = apply_track(DAYS.get(n), get_state()) or {}
+    tasks = pd.get("tasks") or []
+    hw = pd.get("hw") or {}
+    qn = int(body.get("q") or 0)
+    label = ("作业" if qn == 0 else "题%s" % qn)
+    sysmsg = ("你是学习台的代码审阅老师。学生今天在**自己的电脑上用 VS Code** 写了代码，"
+              "你现在读到的就是这个真实文件的内容（含她自己写的题目注释）。\n"
+              "输出中文 Markdown，四块：\n"
+              "1) **对照今天的要求**：逐条对照（任务要求如下），指出做到了什么、漏了什么；\n"
+              "2) **问题清单**：按「严重/一般/建议」分级，每条给出具体位置和怎么改；\n"
+              "3) **亮点**：具体指出哪个写法好（不要泛泛夸奖）；\n"
+              "4) **下一步**：最值得先改的1-2 点。\n"
+              "只依据文件内容判断，不要编造没写的功能；给可直接照抄的修正代码片段。")
+    user = ("【今天(D%s)的任务】\n%s\n\n【作业要求】%s —— %s\n期望：%s\n\n"
+            "【提交的文件】%s\n\n以下是文件真实内容（--注释-- 是她自己抄的题目说明）：\n\n%s"
+            % (n, "\n".join("%d. %s" % (i + 1, t) for i, t in enumerate(tasks)),
+               hw.get("t", ""), hw.get("d", ""), hw.get("e", ""),
+               target.name, code[:20000]))
+    try:
+        reply, usage = ai_chat([{"role": "user", "content": user}],
+                               system=sysmsg, temperature=0.3, max_tokens=3000)
+    except Exception as e:
+        return jsonify({"error": f"AI 调用失败：{e}"}), 502
+    # 保守判定：当天任务里出现率高的关键词命中过半才算这题做到了（才自动勾）
+    ticked = []
+    body_txt = code
+    for idx, t in enumerate(tasks[:6]):
+        keys = [w for w in re.split(r"[，。；：、（）()\s/]+", str(t)) if len(w) >= 3][:4]
+        if keys and sum(1 for w in keys if w in body_txt) >= max(1, (len(keys) + 1) // 2):
+            ticked.append(idx)
+    model_name = current_model()      # 必须在外面：内部会取 _LOCK
+    with _LOCK:
+        st = get_state()
+        e = day_entry(st, date_str)
+        arr = e.setdefault("tasks", [])
+        while len(arr) < len(tasks):
+            arr.append(False)
+        for i in ticked:
+            if not arr[i]:
+                arr[i] = True
+        done_n = sum(1 for x in arr if x)
+        if qn == 0 and body.get("mark_hw") and not e.get("hw"):
+            e["hw"] = True
+        subs = st.setdefault("subs", {})
+        lst = subs.setdefault(date_str, [])
+        lst.append({"t": datetime.datetime.now().isoformat(timespec="seconds"),
+                    "day": n, "code": code[:20000], "feedback": reply,
+                    "file": str(target), "model": model_name})
+        del lst[:-10]
+        save_state(st)
+        stats = compute_stats(st)
+    return jsonify({"label": label, "file": str(target), "reply": reply,
+                    "auto_ticked": ticked, "tasks_done": done_n,
+                    "task_total": len(tasks), "stats": stats,
+                    "model": model_name})
+
+
+@app.route("/api/q/files")
+def api_q_files():
+    """某学习日已经建过的题文件（用于按钮显示状态）"""
+    date_str = (request.args.get("date") or "").strip()
+    rec = load_json(QCODE_PATH, {}).get(date_str, {})
+    return jsonify({"files": rec})
 
 
 @app.route("/api/runfiles")

@@ -311,8 +311,10 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
   </div>
 
   <div class="card">
-    <h2>代码练习区 <span class="tag">真实运行Python · 报错原样显示</span></h2>
-    <div class="muted" style="margin-bottom:8px">写完点【运行】——和课堂终端一样：程序显示"请输入…"后，直接在<b>下面的输入行</b>打字回车就能接着跑，边跑边喂不用重开。上面的预填框是可选的(只有想一次性塞好几行输入时才用，平时留空)。草稿按天自动保存，刷新不丢。</div>
+    <details class="card" id="scratchCard">
+    <summary style="cursor:pointer;font-size:15px"><b>🧪 临时试验区</b> <span class="tag">主战场在 VS Code，这里只放 5 分钟试想法</span></summary>
+    <h2 style="margin-top:10px">代码练习区 <span class="tag">真实运行Python · 报错原样显示</span></h2>
+    <div class="muted" style="margin-bottom:8px"><b>正式作业请用上面每道题的【📂 在 VS Code 里开始这题】</b>——那里会在你的项目文件夹里建文件、用 VS Code 打开，AI 直接读你写的真实文件。这个框只用来临时试一下想法（比如不确定某个函数怎么写）。写完点【运行】——和课堂终端一样：程序显示"请输入…"后，直接在<b>下面的输入行</b>打字回车就能接着跑，边跑边喂不用重开。草稿按天自动保存，刷新不丢。</div>
     <textarea id="codeIn" rows="13" spellcheck="false" placeholder="# 在这里写今天的作业代码"></textarea>
     <div style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
       <button class="btn good" id="runBtn">▶ 运行</button>
@@ -335,10 +337,11 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
       <div id="runFiles" class="muted" style="margin-top:6px">还没有运行过。点【▶ 运行】后再回来看。</div>
     </div>
   </div>
+  </details>
 
   <div class="card">
     <h2>作业提交区 <span class="tag">直通AI老师 · 深度批改</span></h2>
-    <div class="muted" style="margin-bottom:8px">把作业代码贴进来(或从练习区带入)，AI老师按<b id="subDayTag" style="color:var(--acc-text)">当前学习日</b>的作业要求逐项批改，批改记录自动存档可回看。想换天(提前写明天/补写昨天)用页面顶部的<b>学习日</b>切换条，任务/打卡/批改/汇总全都跟着走。</div>
+    <div class="muted" style="margin-bottom:8px"><b>推荐做法</b>：在上面作业题的【📂 在 VS Code 里开始作业】写完代码，然后点【✅ 提交作业给 AI】——AI 会直接读你在 VS Code 里写的真实文件。如果你只是临时贴一段代码，用下面这个框也行。</div>
     <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn ghost" onclick="loadHwBlock()">▶ 载入练习区开写(带作业要求)</button>
       <button class="btn ghost" onclick="importHwExpect()">📤 期望效果导入练习区</button>
@@ -563,6 +566,49 @@ async function setTrack(t){
     setTimeout(()=>location.reload(),600);
   }catch(e){toast(e.message)}
 }
+async function qStart(kn,label){
+  toast('正在你的项目文件夹里建题文件…');
+  try{
+    const r=await api('/api/q/start?date='+encodeURIComponent(dgDate())+'&q='+kn);
+    QFILES[label]=r;
+    if(r.vscode_opened)toast('已建好 <b>'+esc(r.file.split('\\').pop())+'</b> 并用 VS Code 打开');
+    else toast('已建好 <b>'+esc(r.file.split('\\').pop())+'</b>（VS Code 没自动弹出，请手动打开）<br><span class="muted">'+esc(r.dir)+'</span>');
+    const badge=$('#qfile_'+kn);
+    if(badge)badge.textContent='📂 '+r.file.split('\\').pop();
+  }catch(e){toast('失败：'+e.message)}
+}
+async function qSubmit(kn,label){
+  if(!confirm('把你在 VS Code 里写的「'+label+'」真实文件交给 AI 批改？\n（先在 VS Code 里 Ctrl+S 保存）'))return;
+  const b=document.querySelectorAll('button.btn.good');
+  toast('AI 正在读你 '+label+' 的真实文件…约 30-60 秒');
+  try{
+    const rec=QFILES[label]||{};
+    const r=await post('/api/q/submit',{date:dgDate(),q:kn,
+      file:rec.file||'',project:rec.project||''});
+    const fb=$('#workFb')||$('#subFb');
+    if(fb){fb.style.display='block';fb.innerHTML='<b>【'+esc(r.label)+' · AI 批改】</b><br>'+
+      (r.reply||'')+'<div class="muted" style="margin-top:8px">文件：'+esc(r.file)+
+      ' · 自动勾上任务：'+(r.auto_ticked&&r.auto_ticked.length?r.auto_ticked.map(i=>'任务'+(i+1)).join('、'):'（未判定到，任务需手动勾）')+
+      ' · 任务进度 '+r.tasks_done+'/'+r.task_total+'</div>';
+      fb.scrollIntoView({behavior:'smooth'});}
+    TODAY.entry=r.stats?{tasks:TODAY.entry.tasks,hw:TODAY.entry.hw}:TODAY.entry;
+    renderTaskList();updateQBadges();
+    toast('AI 批改完成（勾上 '+(r.auto_ticked?r.auto_ticked.length:0)+' 个任务）');
+  }catch(e){toast('提交失败：'+e.message)}
+}
+async function loadQFiles(){
+  try{
+    const r=await api('/api/q/files?date='+encodeURIComponent(dgDate()));
+    QFILES=r.files||{};
+    for(const k in QFILES){
+      const lbl=k;
+      const el=document.getElementById('mm_'+lbl);   // 题号位置
+      if(el)el.textContent=' 📂 '+esc(QFILES[k].file.split('\\').pop());
+    }
+  }catch(e){}
+}
+let QFILES={};
+
 function renderTaskList(){
   const t=TODAY,pd=t.plan_day;if(!pd)return;
   const trk=(TODAY.tracks&&TODAY.tracks[trackNow]||{});
@@ -706,8 +752,10 @@ async function loadDigest(dateStr){
     const r=await api('/api/digest?date='+DIGEST_DATE);
     if(r.sections&&r.sections.length){renderDigest(r);return}
     box.innerHTML=banner+`<div class="muted">还没有生成。AI会读取已抓取的教材正文(${TODAY.plan_day.res.length}份资料)，按知识点整理成讲解+要点+每日刷题(免费魔搭模型，约需半分钟)。</div>
-      <div style="margin-top:10px"><button class="btn" id="dgBtn">✨ 生成${prev?'明天的':'本学习日'}教程汇总+刷题</button></div>`;
+      <div style="margin-top:10px"><button class="btn" id="dgBtn">✨ 生成${prev?'明天的':'本学习日'}教程汇总+刷题</button></div>
+      <div id="hwOnlyBox"></div>`;
     $('#dgBtn').onclick=genDigest;
+    $('#hwOnlyBox').innerHTML=hwExerciseHtml(TODAY.plan_day);
   }catch(e){box.innerHTML='<div style="color:var(--bad)">'+esc(e.message)+'</div>'}
 }
 function backTodayDigest(){loadDigest(TODAY.date)}
@@ -721,6 +769,16 @@ async function genDigest(){
     renderDigest(r);
     if(r.new_achievements&&r.new_achievements.length)toast('新成就：<b>'+r.new_achievements.map(a=>a.name).join('、')+'</b>');
   }catch(e){box.innerHTML='<div style="color:var(--bad)">'+esc(e.message)+'</div><div style="margin-top:8px"><button class="btn" onclick="genDigest()">重试</button></div>'}
+}
+// 无论有没有题目，作业题块都要能出现（她可能今天只想做作业）
+function ensureHwExercise(){
+  const pd=TODAY&&TODAY.plan_day;if(!pd||!pd.hw)return;
+  if(document.querySelector('#qdet_hw'))return;
+  const box=$('#digestBox');if(!box)return;
+  const d=document.createElement('div');
+  d.innerHTML=hwExerciseHtml(pd);
+  const node=d.firstElementChild;
+  if(node)box.appendChild(node);
 }
 function renderDigest(r){
   DIGEST=r;
@@ -739,8 +797,10 @@ function renderDigest(r){
         const badge=idx!=null?` <span class="tag" id="qtag_${kn}" style="cursor:pointer" onclick="jumpQ(${kn});event.preventDefault()">【任务${kn}】${esc(pd0.tasks[idx].slice(0,22))}${tDone?' <b style="color:var(--ok)">✔已完成</b>':''}</span>`:'';
         return `
         <div class="exer">
-          <details id="qdet_${kn}"><summary>题${kn}：${esc(ex.q)}${badge} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span></summary>
+          <details id="qdet_${kn}"><summary>题${kn}：${esc(ex.q)}${badge} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span><span id="qfile_${kn}" class="muted"></span></summary>
             <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" onclick="qStart(${kn},'题${kn}')" title="在你的项目文件夹里建好这个题的文件、写入题目注释，并用 VS Code 打开">📂 在 VS Code 里开始这题</button>
+              <button class="btn good" onclick="qSubmit(${kn},'题${kn}')" title="读你 VS Code 里写的真实文件，AI 批改后自动勾上对应任务">✅ 提交这题给 AI</button>
               <button class="btn ghost" onclick="toggleAns(this)">👁 显示参考答案</button>
               <button class="btn ghost" onclick="loadStarter(${i},${j})">▶ 载入练习区开写</button>
               <button class="btn ghost" onclick="importAns(${i},${j})">📤 参考答案导入练习区</button>
@@ -756,7 +816,7 @@ function renderDigest(r){
     </div>`).join('');
   box.innerHTML=banner+(r.note?`<div class="muted" style="margin-bottom:8px">💡 ${esc(r.note)}</div>`:'')
     +(kn?`<div class="hintbox on" style="margin-bottom:8px">共 <b>${kn}</b> 道练习题(藏在各节里) · 点开题干 → 想先自己做就只看题，卡住了再点【显示参考答案】<br>
-    💾 <b>代码会自动存档</b>：载入某题后停笔 1.2 秒、切到下一题、切换学习日、关页面都会自动存。<br>
+    📂 <b>写代码请用 VS Code</b>：点每道题的【在 VS Code 里开始这题】——学习台会在 D:\我的作品\D<n>-xxx\ 里建好题文件、写入题目注释并自动打开 VS Code；写完点【提交这题给 AI】，AI 读你写的<b>真实文件</b>批改，并自动勾上对应任务。<br>
     ☑️ <b>题和任务是绑定的</b>：题${pd0?`1~${Math.min(kn,pd0.tasks.length)}`:''}分别对应任务1~${pd0?Math.min(kn,pd0.tasks.length):0}，
     这题写了代码就自动勾上对应任务，不用手动打钩；最下面的<b>课后作业</b>交批改＝作业完成。<br>
     回看：进度页日历点这一天，或大纲页点某天 →【看这天我写的代码】。</div>`:'')
@@ -779,10 +839,12 @@ function hwExerciseHtml(pd){
   return `<div class="exer" id="hwExWrap">
     <details id="qdet_hw" ${done?'open':''}>
       <summary>📌 课后作业（做完这题就等于勾上"作业完成"）：${esc(pd.hw.t)}
-        <span class="tag">作业</span><span id="mm_hw">${mineGet(date,'作业')?' 💾已存':''}</span><span id="qhwbadge">${done?' <b style="color:var(--ok)">✔作业已完成</b>':''}</span></summary>
+        <span class="tag">作业</span><span id="mm_hw">${mineGet(date,'作业')?' 💾已存':''}</span><span id="qhwbadge">${done?' <b style="color:var(--ok)">✔作业已完成</b>':''}</span><span id="qfile_hw" class="muted"></span></summary>
       <div style="margin-top:6px"><b>要求：</b>${esc(pd.hw.d)}</div>
       <div class="muted" style="margin-top:4px"><b>期望：</b>${esc(pd.hw.e||'')}</div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="qStart(0,'作业')" title="在项目文件夹里建好 homework.py、写入作业要求，并用 VS Code 打开">📂 在 VS Code 里开始作业</button>
+        <button class="btn good" onclick="qSubmit(0,'作业')" title="读你在 VS Code 里写的真实文件交给 AI 批改">✅ 提交作业给 AI</button>
         <button class="btn ghost" onclick="loadHwBlock()">▶ 载入练习区开写</button>
         <button class="btn ghost" onclick="importHwExpect()">📤 期望效果导入练习区</button>
         <button class="btn ghost" onclick="saveHwMine()">💾 存我的代码</button>
