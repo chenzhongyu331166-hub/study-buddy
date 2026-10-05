@@ -325,15 +325,21 @@ def api_checkin():
     body = request.get_json(force=True, silent=True) or {}
     st = get_state()
     date_str = body.get("date") or default_study_date(st)
-    if day_index(date_str) is None:
+    n = day_index(date_str)
+    if n is None:
         return jsonify({"error": "日期不在84天计划内"}), 400
     before = set(earned(st, compute_stats(st)))
     with _LOCK:
         e = day_entry(st, date_str)
         if "idx" in body:
             idx = int(body["idx"])
-            if not 0 <= idx < 3:
-                return jsonify({"error": "idx须为0-2"}), 400
+            # 任务条数随计划/路线变化(D44起PM线3条；环境日与项目日已扩到4条)，不能写死上限
+            n_task = len((apply_track(DAYS.get(n), st) or {}).get("tasks") or [])
+            if not 0 <= idx < max(n_task, 1):
+                return jsonify({"error": f"idx须为0-{max(n_task - 1, 0)}"}), 400
+            tasks = e.setdefault("tasks", [])
+            while len(tasks) < max(n_task, idx + 1):
+                tasks.append(False)
             e["tasks"][idx] = bool(body.get("done"))
         if "hw" in body:
             e["hw"] = bool(body.get("hw"))
