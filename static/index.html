@@ -360,6 +360,17 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     <div class="subhist" id="subHist"></div>
   </div>
 
+  <div class="card" id="gitDayCard" style="display:none">
+    <h2>今日 · git 跟练 <span class="tag">点一下给一条命令，照着敲就行</span></h2>
+    <div class="muted" style="margin-bottom:8px">git 就是"给文件夹拍快照"，每提交一次就存一版，改坏了随时能退回去。下面每点一步都给一条命令和它该出现的结果——<b>不需要理解语法，照着做就能完成今天的任务</b>。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="gitHelp(0)">▶ 从第1步开始跟练</button>
+      <button class="btn ghost" onclick="showGitCmd()">直接看全部命令</button>
+    </div>
+    <div id="gitHelp" style="display:none"></div>
+    <div id="gitAll" style="display:none;margin-top:10px"></div>
+  </div>
+
   <div class="card">
     <h2>本地项目 · 交给AI审阅 <span class="tag">环境日起在 VS Code 里写代码</span></h2>
     <div class="muted" style="margin-bottom:8px">你在自己电脑上（VS Code）写的项目，<b>放进下面这个根目录下的一个文件夹</b>，选它 → AI 就能审阅<b>整个文件夹</b>（文件结构 + 全部源码 + 对照当天作业要求）。零上传：学习台就跑在这台电脑上，直接读。</div>
@@ -523,6 +534,8 @@ function renderToday(){
   loadSubs();
   loadRunFiles();
   workLoadConfig();
+  const gc=$('#gitDayCard');
+  if(gc)gc.style.display=(String((pd&&pd.title)||'').toLowerCase().indexOf('git')>=0)?'':'none';
 }
 // ---------- 任务 ↔ 题 一一对应：题写了代码就自动勾任务，不用手动打钩 ----------
 function countQ(){                       // 当天教程汇总里的题目数(不含作业题)
@@ -1284,6 +1297,63 @@ async function showDayCode(n){
   box.innerHTML='<div class="loading">加载 D'+n+' 的代码存档...</div>';
   box.innerHTML=await calDayHtml(n);
   box.scrollIntoView({behavior:'smooth'});
+}
+
+function showGitCmd(){
+  const rows=[
+    ['cd D:\\我的作品\\todo','走进项目文件夹'],
+    ['git status','看当前状态(随时可问"啥情况")'],
+    ['git init','把文件夹变成 git 仓库(生成 .git)'],
+    ['git add .','把改动"暂存"起来'],
+    ['git commit -m "说明文字"','真正存一版，-m 写这次干了什么'],
+    ['git log','看所有历史版本'],
+    ['git diff','看这次到底改了什么(红=删 绿=加)'],
+  ];
+  const box=$('#gitAll');box.style.display='block';
+  box.innerHTML='<b>今天你会用到的全部命令（记不住就回来查）</b><div class="cblk" style="margin-top:8px">'
+    +rows.map(r=>esc(r[0]).padEnd(42)+'  # '+esc(r[1])).join('\n')+'</div>';
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ---------- 今天这天的 git 课：跟着敲就能完成（对新手极友好） ----------
+function gitHelp(step){
+  const CMDS=[
+    ['1. 进到项目文件夹', 'cd D:\\我的作品\\todo',
+     '先"走进去"。git 只认它所在的文件夹，位置不对后面全错。提示符会变成 PS D:\\我的作品\\todo>'],
+    ['2. 看当前状态（第一次跑一下）', 'git status',
+     '告诉你现在哪些文件"没人管"(红/??)。这是你随时能问的"现在啥情况"。'],
+    ['3. 把这个文件夹变成 git 仓库', 'git init',
+     '凭空多出一个隐藏的 .git 文件夹，从此 git 开始记录这里的一切。'],
+    ['4. 再看一次状态（这次不一样了）', 'git status',
+     '对比第2步：现在显示"待提交"的分支(Changes to be committed)，说明 .git 生效了。'],
+    ['5. 把所有文件"暂存"起来', 'git add .',
+     '"我准备交这一版"。点是一次性的暂存，不是最终提交。'],
+    ['6. 确认暂存了什么', 'git status',
+     '该出现绿色/Changes to be committed，看到文件名就对了。'],
+    ['7. 真正提交一个版本', 'git commit -m "feat: 实现 add 和 list 两个命令"',
+     '-m 后面是这次提交干了什么。这行字你三个月后还会看，所以要写人话。'],
+    ['8. 看历史（你的版本快照）', 'git log',
+     '每条记录= 一次提交：谁、什么时候、说了什么。已经能看到你的第一个版本了。'],
+    ['9. 改一行代码 → 看改了啥', 'python -c "print(1)"',
+     '随便做点改动（或在 todo.py 里加个注释），下一步教你对比。'],
+    ['10. 对比：这次改了什么', 'git diff',
+     '红色=删掉的，绿色=新加的。这一步看懂，git 就懂一半了。'],
+    ['11. 暂存改动', 'git add .', '同上第5步，把刚才的改动放进暂存区。'],
+    ['12. 提交第二个版本', 'git commit -m "chore: 加了一行注释"',
+     '注意 log 里现在有 2 条了——这就是"版本历史"的直观样子。'],
+    ['13. 再来一次', 'git status',
+     '仓库干净时它说 nothing to commit，说明所有改动都提交完了。'],
+  ];
+  const s=CMDS[step];
+  if(!s)return;
+  const box=$('#gitHelp');
+  box.style.display='block';
+  box.innerHTML=`<b>${esc(s[0])}</b><br>
+    <div style="margin-top:6px"><code style="background:var(--code-bg);padding:6px 10px;border-radius:6px;display:block">${esc(s[1])}</code></div>
+    <div class="muted" style="margin-top:6px">${s[2]}</div>
+    <div style="margin-top:8px"><button class="btn" onclick="gitHelp(${step+1})">下一步 →</button>
+      <button class="btn ghost" onclick="gitHelp(0)">← 回到第一步</button></div>`;
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 // ---------- 本地项目审阅 + 运行产生的文件 ----------
