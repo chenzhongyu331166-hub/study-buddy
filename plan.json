@@ -2,261 +2,358 @@
   "meta": {
     "start": "2026-09-26",
     "total_days": 27,
-    "generated": "2026-10-05T13:59:43",
-    "note": "紧凑版（初级够用路线）：每块只学到够用，需要时再回头拓展。原 85 天考研版保留在 plan_kaoyan_85d.json。写代码在 VS Code 真实环境完成，学习台负责教程/任务/进度/AI审阅。"
+    "generated": "2026-10-06T21:35:09",
+    "note": "D1-D9 为已完成的历史(内容与原85天版完全一致，未做任何改动)；D10 起为压缩后的紧凑内容(初级够用路线)。原85天完整版保留在 plan_kaoyan_85d.json。写代码在 VS Code 真实环境完成，学习台负责教程/任务/进度/AI审阅。"
   },
   "days": [
     {
       "day": 1,
-      "date": "2026-09-26",
       "stage": 1,
-      "title": "Python 语法速通：变量/条件/循环",
+      "title": "Python初体验：环境、变量与数据类型",
       "tasks": [
-        "变量与数据类型：亲手把 int/float/str/bool 各写一遍并 print 看结果",
-        "亲手敲一遍条件 if/else 与循环 for/while（不复制粘贴，边敲边想）",
-        "完成一个练习：读入两个数，输出较大那个（自己写，别问 AI）"
+        "打开VS Code，运行第一个Python程序(print Hello)",
+        "跟着教程在交互式解释器里练10个表达式(算术/字符串/变量)",
+        "用input依次询问城市、年龄、爱好，再用f-string拼成一句自我介绍输出。"
       ],
       "kp": [
-        "变量与四种基本类型",
-        "条件与循环的写法",
-        "input/print 的类型转换"
+        "print()/input()",
+        "变量与赋值",
+        "int/float/str类型",
+        "注释 #"
       ],
-      "hw": {
-        "t": "手感练习：三个小题",
-        "d": "自己写 if+for 完成：统计一段文本里每个词出现几次（不许问 AI，卡住先想 10 分钟）",
-        "e": "一段文本的词频统计.py 能跑出结果"
-      },
       "res": [
         {
-          "t": "CS50 Python",
-          "u": "https://cs50.harvard.edu/python/",
-          "src": "cs50.harvard.edu"
+          "t": "5.1 数据类型和变量",
+          "u": "https://liaoxuefeng.com/books/python/basic/data-types/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "官方教程 3.1 Python用作计算器(数字/文本)",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/introduction.html",
+          "src": "Python官方中文文档"
+        },
+        {
+          "t": "菜鸟 Python3 基础语法",
+          "u": "https://www.runoob.com/python3/python3-basic-syntax.html",
+          "src": "菜鸟教程"
         }
-      ]
+      ],
+      "hw": {
+        "t": "自我介绍生成器",
+        "d": "写一个程序：input()依次问姓名、专业、今天心情，最后用一条print()输出一句话自我介绍。要求：至少用到2个变量和1次f-string格式化。",
+        "e": "示例输出：大家好，我是社会学专业的邹小雨，今天心情不错！"
+      },
+      "date": "2026-09-26"
     },
     {
       "day": 2,
-      "date": "2026-09-27",
       "stage": 1,
-      "title": "容器与字典：list/dict/tuple",
+      "title": "条件判断：让程序学会做选择",
       "tasks": [
-        "容器：list/dict/tuple 各建一个，手动增删查改，不用 AI 生成",
-        "字典嵌套：用一个 dict 存一个人的基本信息（姓名/年龄/爱好列表）",
-        "完成练习：把一组 dict 排成表格输出"
+        "精读条件判断章节，抄写3个例子后合上书自己重写",
+        "在解释器里测试 and/or/not 的组合真值",
+        "输入百分制分数，用and/or组合条件判定等级(A/B/C/D)并输出是否及格"
       ],
       "kp": [
-        "list/dict/tuple 的区别与选择",
-        "字典嵌套结构",
-        "遍历字典与列表"
+        "if/elif/else",
+        "比较运算符",
+        "布尔值True/False",
+        "逻辑运算and/or/not"
       ],
-      "hw": {
-        "t": "手感练习：通讯录数据结构",
-        "d": "用字典存 3 个联系人并打印成规整的表格（不许问 AI）",
-        "e": "能打印出格式整齐的通讯录"
-      },
       "res": [
         {
-          "t": "Programiz Python 例子",
-          "u": "https://www.programiz.com/python-programming/examples",
-          "src": "programiz.com"
+          "t": "5.4 条件判断",
+          "u": "https://liaoxuefeng.com/books/python/basic/if/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "官方教程 4.1 更多控制流工具",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/controlflow.html",
+          "src": "Python官方中文文档"
         }
-      ]
+      ],
+      "hw": {
+        "t": "BMI计算器+体测评级",
+        "d": "input输入身高(m)和体重(kg)，计算BMI=kg/m^2，按中国标准分：偏瘦/正常/超重/肥胖四档输出。再加防错：输入非数字时用isdigit()判断并友好提示。",
+        "e": "输入1.70 65 -> 输出：BMI=22.5，体型正常"
+      },
+      "date": "2026-09-27"
     },
     {
       "day": 3,
-      "date": "2026-09-28",
       "stage": 1,
-      "title": "函数：把重复代码拆出来",
+      "title": "循环：批量干活的效率武器",
       "tasks": [
-        "函数：把昨天重复的代码抽成一个函数（自己动手拆）",
-        "参数与返回值：写一个带默认参数和可变参数的函数",
-        "完成练习：写一个函数，输入一段文字返回最长单词"
+        "精读循环章节，理解while与for的区别",
+        "手写九九乘法表(嵌套for)",
+        "随机生成1-50数字，用while循环让玩家反复猜，提示偏大或偏小直到猜中。"
       ],
       "kp": [
-        "函数定义与调用",
-        "默认参数/可变参数",
-        "函数拆分与复用"
+        "for/while",
+        "range()",
+        "break/continue",
+        "循环嵌套"
       ],
-      "hw": {
-        "t": "手感练习：把代码拆成函数",
-        "d": "把 D1 的词频统计拆成 3 个函数：清洗文本/统计词频/输出结果，每个函数独立",
-        "e": "拆成 ≥3 个函数且能跑"
-      },
       "res": [
         {
-          "t": "Python 官方教程",
-          "u": "https://docs.python.org/zh-cn/3/tutorial/",
-          "src": "docs.python.org"
+          "t": "5.6 循环",
+          "u": "https://liaoxuefeng.com/books/python/basic/loop/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "官方教程 4.2/4.3 循环",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/controlflow.html",
+          "src": "Python官方中文文档"
         }
-      ]
+      ],
+      "hw": {
+        "t": "猜数字游戏",
+        "d": "用random.randint(1,100)出题，while循环接收猜测，print提示大了/小了，猜中打印用了几次。选做：限8次机会判负。",
+        "e": "输入50 -> 大了！ -> ... -> 恭喜，第6次猜中！"
+      },
+      "date": "2026-09-28"
     },
     {
       "day": 4,
-      "date": "2026-09-29",
       "stage": 1,
-      "title": "读懂报错与调试手法",
+      "title": "容器数据结构：list/tuple/dict/字符串",
       "tasks": [
-        "读懂报错：故意制造 3 种错误(语法错/名字错/类型错)并读懂最后一行",
-        "调试手法：二分打印定位、print 关键变量",
-        "完成练习：把一个报错的程序改到能跑"
+        "精读list与tuple章节，重点理解可变与不可变",
+        "把通讯录练习改成dict存储：增删查各写一个函数",
+        "用split和join把一句话拆成单词列表，再拼回用短横线连接的字符串。"
       ],
       "kp": [
-        "三类常见错误与读法",
-        "Traceback 从下往上读",
-        "二分调试法"
+        "list增删改查",
+        "dict键值对",
+        "tuple不可变",
+        "字符串索引与切片"
       ],
-      "hw": {
-        "t": "修好三个坏程序",
-        "d": "给你三个有 bug 的程序(语法错/NameError/TypeError)，读懂报错并修好，写下你读到的最后一行是什么",
-        "e": "能自己读报错并修好，不用问我"
-      },
       "res": [
         {
-          "t": "Python 异常教程",
-          "u": "https://docs.python.org/zh-cn/3/tutorial/errors.html",
-          "src": "docs.python.org"
+          "t": "5.2 字符串和编码",
+          "u": "https://liaoxuefeng.com/books/python/basic/string-encoding/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "5.3 使用list和tuple",
+          "u": "https://liaoxuefeng.com/books/python/basic/list-tuple/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "5.7 使用dict和set",
+          "u": "https://liaoxuefeng.com/books/python/basic/dict-set/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "官方教程 3.1.3 列表",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/introduction.html",
+          "src": "Python官方中文文档"
         }
-      ]
+      ],
+      "hw": {
+        "t": "通讯录管理器(dict版)",
+        "d": "用dict存联系人(名字->电话)，循环菜单：1添加 2查找 3删除 4列出全部 5退出。所有操作在一个while True里完成。",
+        "e": "菜单循环运转，输入4列出全部联系人"
+      },
+      "date": "2026-09-29"
     },
     {
-      "title": "语法综合：命令行小工具",
+      "day": 5,
+      "stage": 1,
+      "title": "函数：把重复代码打包复用",
       "tasks": [
-        "把前 4 天的容器/函数/调试合成一个能存盘的小命令行工具",
-        "自己设计数据结构（用什么存、字段有哪些），先写下来再写代码",
-        "跑起来并故意弄坏一次，验证你能自己读报错"
+        "读AI教程汇总的函数三节；用print实测一次默认参数与位置参数的差异（各调用两次）",
+        "把昨天通讯录作业的菜单打印部分抽成一个 show_menu() 函数，在主程序里调用它",
+        "写一个带默认参数的问候函数，再写一个接收任意数量参数的求和函数各调用一次。"
       ],
       "kp": [
-        "综合运用：容器+函数+调试",
-        "先设计后编码",
-        "读报错定位自己的 bug"
+        "def/return",
+        "参数与返回值",
+        "默认参数",
+        "作用域初步"
       ],
-      "hw": {
-        "t": "语法综合：命令行小工具",
-        "d": "自己设计一个命令行小工具(任务清单/通讯录/记账都行)，用字典或列表存数据，要有至少 3 个函数，运行中随时能存盘。全程自己写，卡住先想 10 分钟再问 AI。",
-        "e": "能跑、有 3 个以上函数、能存盘、报错自己能看懂"
-      },
       "res": [
         {
-          "t": "CS50 Python",
-          "u": "https://cs50.harvard.edu/python/",
-          "src": "cs50.harvard.edu"
+          "t": "6.1 调用函数",
+          "u": "https://liaoxuefeng.com/books/python/function/call-function/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "6.2 定义函数",
+          "u": "https://liaoxuefeng.com/books/python/function/define-function/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "6.3 函数的参数",
+          "u": "https://liaoxuefeng.com/books/python/function/parameter/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "官方教程 4.8 用户自定义函数",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/controlflow.html",
+          "src": "Python官方中文文档"
         }
       ],
-      "day": 5,
-      "date": "2026-09-30",
-      "stage": 1
+      "hw": {
+        "t": "重构：工具函数库",
+        "d": "新建utils.py，把通讯录里的公共逻辑(如safe_int(s)安全转数字)抽成2-3个函数，主程序import utils调用；每个函数写一行docstring。",
+        "e": "主程序变短一半以上，功能不变"
+      },
+      "date": "2026-09-30"
     },
     {
       "day": 6,
-      "date": "2026-10-01",
-      "stage": 2,
-      "title": "文件读写与 JSON 存档",
+      "stage": 1,
+      "title": "文件读写与异常处理：程序也要有记忆",
       "tasks": [
-        "文件读写：用 open 读写 txt（今天的 D6 环境日已经建过文件了）",
-        "JSON：json.dump/json.load 做存档，读写自己的任务列表",
-        "完成练习：把上一课的通讯录存成 contacts.json，下次启动自动加载"
+        "精读文件读写章节，理解open/with/编码",
+        "把通讯录数据存成JSON，重启程序自动加载",
+        "给除法运算包上try/except，捕获除零错误并打印友好提示而不是崩溃。"
       ],
       "kp": [
-        "open/read/write/with",
-        "json 序列化与反序列化",
-        "文本与数据的区别"
+        "open()/with",
+        "JSON序列化",
+        "try/except/finally",
+        "常见异常类型"
+      ],
+      "res": [
+        {
+          "t": "13.1 文件读写",
+          "u": "https://liaoxuefeng.com/books/python/io/file/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "12.1 错误处理",
+          "u": "https://liaoxuefeng.com/books/python/error-debug-test/error/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "官方教程 4.9 错误和异常",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/controlflow.html",
+          "src": "Python官方中文文档"
+        }
       ],
       "hw": {
         "t": "存档版通讯录",
-        "d": "程序每次增删后写入 contacts.json；启动时若文件存在就自动加载；input 全部包异常处理",
-        "e": "关掉重开，联系人还在"
+        "d": "每次增删后json.dump写入contacts.json；启动时若文件存在则json.load加载。所有input()包异常处理(输入空值/非数字不崩溃)。",
+        "e": "关掉程序重开，联系人还在"
       },
-      "res": [
-        {
-          "t": "JSON 官方文档",
-          "u": "https://docs.python.org/zh-cn/3/library/json.html",
-          "src": "docs.python.org"
-        }
-      ]
+      "date": "2026-10-01"
     },
     {
       "day": 7,
-      "date": "2026-10-02",
-      "stage": 2,
-      "title": "项目目录结构：src/tests/docs",
+      "stage": 1,
+      "title": "阶段项目：命令行Todo工具(毕业作品1)",
       "tasks": [
-        "目录结构：新建 src/ tests/ docs/ 三个目录并各放东西",
-        "把之前写的代码挪进 src/，确认还能跑（挪完 import 要跟着改）",
-        "完成练习：把项目整理成有结构的目录"
+        "独立设计数据结构(列表存任务字典)，先写设计再写代码",
+        "实现：添加/完成/删除/列出/保存 五个功能",
+        "为一个小脚本写README.md，说明用途、运行方式和示例输出，再git提交一次。",
+        "产品视角：给这个工具写一页迷你PRD——目标用户是谁、解决他什么痛点、核心功能优先级怎么排、成功指标是什么"
       ],
       "kp": [
-        "src/tests/docs 分层",
-        "移动文件后 import 的变化",
-        "项目结构约定"
+        "综合运用本周知识",
+        "数据与展示分离",
+        "README写作",
+        "git基本提交"
       ],
-      "hw": {
-        "t": "整理项目结构",
-        "d": "把现有项目整理成 src/tests/docs 三层，整理后 python src/main.py 仍能正常跑",
-        "e": "结构清晰且跑得通"
-      },
       "res": [
         {
-          "t": "CS50 Python",
-          "u": "https://cs50.harvard.edu/python/",
-          "src": "cs50.harvard.edu"
+          "t": "4 创建版本库",
+          "u": "https://liaoxuefeng.com/books/git/create-repo/index.html",
+          "src": "廖雪峰Git教程"
+        },
+        {
+          "t": "官方教程 4.9.1 定义函数",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/controlflow.html",
+          "src": "Python官方中文文档"
         }
-      ]
+      ],
+      "hw": {
+        "t": "Todo命令行工具",
+        "d": "完整实现：todo.py 支持 add/done/del/list/自动存档，目标80行以上。自己敲，卡住先想10分钟再问AI。完成后传GitHub(D15正式教git，今天先用AI给的三条命令)。",
+        "e": "python todo.py add 学Python 后 list 显示 [ ] 1. 学Python"
+      },
+      "date": "2026-10-02"
     },
     {
       "day": 8,
       "date": "2026-10-03",
       "stage": 2,
-      "title": "环境日：VS Code + 命令行 + import",
+      "title": "环境日：装VS Code·建真实项目·终端跑起来",
       "tasks": [
-        "环境日：VS Code 打开项目文件夹、新建 .py、终端跑 python xxx.py",
-        "两个文件 import 调用（你今天已经做成一次，再自己复现一遍）",
-        "用 Python 代码生成 README.md，并去资源管理器确认文件真出现"
+        "装好 VS Code，新建文件夹 D:\\我的作品\\todo，在 VS Code 里【打开文件夹】(整个文件夹才叫项目，别只打开单个文件)",
+        "在里面新建 todo.py，用 VS Code 的集成终端敲 python todo.py 真跑一次；再故意写错一行，看懂红色报错在说什么",
+        "新建 utils.py，把 todo.py 里的一个函数搬过去，在 todo.py 里 from utils import 该函数，跑通(这一步学习台做不到，必须真环境)",
+        "用 Python 写文件：写几行代码生成 README.md 和 data.json，跑一次后用资源管理器确认文件真的出现了"
       ],
       "kp": [
-        "项目文件夹 vs 单文件",
-        "在哪个目录运行(cmd 决定 import 能不能找到)",
-        "用代码生成文件"
+        "装 VS Code 并打开项目文件夹",
+        "在 VS Code 里新建/保存 .py 文件",
+        "在集成终端敲 python xxx.py",
+        "两个文件之间的 import 调用",
+        "用 Python 生成 README.md 与 json 存档"
       ],
       "hw": {
-        "t": "项目三件套",
-        "d": "项目里至少有 3 个 .py 文件 + README.md + 一个数据文件；README 必须由 Python 代码生成",
-        "e": "目录里文件齐全且跑得通"
+        "t": "把 todo 搬进真实项目文件夹",
+        "d": "把 D7 的 todo 工具搬进 D:\\我的作品\\todo\\，必须拆出 utils.py(至少一个函数从里面 import)；README.md 必须用 Python 代码写出来(不许用记事本)；data.json 必须由程序运行时生成。",
+        "e": "在 VS Code 终端敲 python todo.py 能跑；目录里有 todo.py / utils.py / README.md / data.json 四个文件；README 是代码生成的"
       },
       "res": [
         {
-          "t": "VS Code Python 教程",
+          "t": "VS Code Python 官方教程",
           "u": "https://code.visualstudio.com/docs/python/python-tutorial",
           "src": "code.visualstudio.com"
+        },
+        {
+          "t": "Python 官方教程·模块(import)",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/modules.html",
+          "src": "docs.python.org"
+        },
+        {
+          "t": "Python 官方教程·输入输出(文件)",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/inputoutput.html",
+          "src": "docs.python.org"
         }
       ]
     },
     {
       "day": 9,
-      "date": "2026-10-04",
       "stage": 2,
-      "title": "git 版本管理：init/add/commit",
+      "title": "列表推导式与常用内建函数",
       "tasks": [
-        "git 装好并配置：git init / add / commit / log / status",
-        "看懂一次提交做了什么：改一行→diff→commit，加进 README 说明",
-        "完成练习：把项目提交 3 次，每次一个功能"
+        "精读切片/迭代/列表生成式三节",
+        "用推导式重写第4天的过滤代码(一行顶五行)",
+        "用sorted按年龄升序排列人员列表，再用列表推导式筛出成年人姓名。"
       ],
       "kp": [
-        "git 是什么：版本快照",
-        "init/add/commit/log/status/diff",
-        "什么时候该提交"
+        "切片语法",
+        "列表推导式",
+        "sorted(key=)",
+        "map/filter"
       ],
-      "hw": {
-        "t": "用 git 管你的项目",
-        "d": "把项目初始化 git 仓库并提交至少 3 次(每个功能一次)，commit 消息写清做了什么",
-        "e": "git log 能看出每次提交做了什么"
-      },
       "res": [
         {
-          "t": "VS Code Python 教程",
-          "u": "https://code.visualstudio.com/docs/python/python-tutorial",
-          "src": "code.visualstudio.com"
+          "t": "7.1 切片",
+          "u": "https://liaoxuefeng.com/books/python/advanced/slice/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "7.3 列表生成式",
+          "u": "https://liaoxuefeng.com/books/python/advanced/list-comprehension/index.html",
+          "src": "廖雪峰的官方网站"
+        },
+        {
+          "t": "8.1.3 sorted",
+          "u": "https://liaoxuefeng.com/books/python/functional/higher-order-function/sorted/index.html",
+          "src": "廖雪峰的官方网站"
         }
-      ]
+      ],
+      "hw": {
+        "t": "成绩单处理器",
+        "d": "scores=[(张三,87),(李四,92)...]自编8人。sorted按分数降序、按名字各排一遍；推导式筛90分以上；format对齐输出表格。",
+        "e": "输出对齐的成绩排名表"
+      },
+      "date": "2026-10-04"
     },
     {
       "day": 10,
@@ -770,39 +867,39 @@
   "stages": [
     {
       "stage": 1,
-      "name": "Python 语法速通 + 手感训练",
-      "goal": "初级够用：能自己敲出来，不查 AI",
-      "range": "D1-5"
+      "name": "阶段1",
+      "range": "D1-7",
+      "goal": ""
     },
     {
       "stage": 2,
-      "name": "工程能力：让别人能跑你的代码",
-      "goal": "项目结构/git/测试——你现在最大的缺口",
-      "range": "D6-11"
+      "name": "阶段2",
+      "range": "D8-11",
+      "goal": ""
     },
     {
       "stage": 3,
-      "name": "pandas 与可视化：手感版",
-      "goal": "你做过项目，这里只练自己敲出来",
-      "range": "D12-13"
+      "name": "阶段3",
+      "range": "D12-13",
+      "goal": ""
     },
     {
       "stage": 4,
-      "name": "SQL：能查能取",
-      "goal": "初级够用，不追求精通",
-      "range": "D14-16"
+      "name": "阶段4",
+      "range": "D14-16",
+      "goal": ""
     },
     {
       "stage": 5,
-      "name": "Flask 与 Web：你完全没碰过的部分",
-      "goal": "能看懂、能改、能和研发对话",
-      "range": "D17-20"
+      "name": "阶段5",
+      "range": "D17-20",
+      "goal": ""
     },
     {
       "stage": 6,
-      "name": "产品与作品集：拿这个去投实习",
-      "goal": "你的社会学背景在这里是优势",
-      "range": "D21-27"
+      "name": "阶段6",
+      "range": "D21-27",
+      "goal": ""
     }
   ],
   "tracks": {
