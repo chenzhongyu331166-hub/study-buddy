@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>今日任务 · 学习台</title>
+<style>
+:root{--bg:#0f1117;--panel:#181b24;--line:#2b3040;--fg:#e8eaf0;--dim:#98a0b3;--acc:#6aa5e8;--ok:#4caf7d;--warn:#e0a44c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif;padding:14px}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:20px;margin:6px 0 2px}
+h2{font-size:16px;margin:18px 0 8px;color:var(--acc)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.muted{color:var(--dim);font-size:13px}
+.big{font-size:26px;font-weight:700}
+.nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+button.p{background:var(--acc);color:#0b1220;border-color:var(--acc);font-weight:700}
+button:active{transform:translateY(1px)}
+.task{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line)}
+.task:last-child{border-bottom:0}
+.tick{flex:0 0 26px;height:26px;border:2px solid var(--line);border-radius:7px;background:transparent;color:transparent;font-size:15px;line-height:1;cursor:pointer;margin-top:2px}
+.tick.on{background:var(--ok);border-color:var(--ok);color:#04140b;font-weight:900}
+.task.done .txt{color:var(--dim);text-decoration:line-through}
+.txt{flex:1}
+a{color:var(--acc)}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:12px;color:var(--dim);margin:2px 4px 2px 0}
+.kp{background:#131722;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:14px;margin-bottom:4px}
+textarea{width:100%;min-height:70px;background:#131722;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px;font:14px/1.6 inherit}
+pre{white-space:pre-wrap;word-break:break-word;background:#131722;border:1px solid var(--line);border-radius:8px;padding:10px;font:14px/1.6 inherit;max-height:50vh;overflow:auto}
+.hint{background:#1b2430;border-left:3px solid var(--acc);padding:8px 10px;border-radius:0 8px 8px 0;font-size:13px}
+.ok{color:var(--ok);font-weight:700}
+</style></head><body><div class="wrap">
+<h1>今日任务</h1>
+<div class="muted" id="sub">加载中…</div>
+
+<div class="nav" style="margin-top:10px">
+  <button onclick="go(-1)">‹ 前一天</button>
+  <button class="p" onclick="go(0)">今天</button>
+  <button onclick="go(1)">后一天 ›</button>
+  <span style="flex:1"></span>
+  <button onclick="showAll()">全部天</button>
+</div>
+<div class="card" style="padding:10px 14px">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span class="muted">学习日钉住</span>
+    <input id="pinBox" type="number" min="1" max="27" style="width:80px;background:#131722;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px">
+    <button onclick="pin(parseInt(document.getElementById('pinBox').value,10)||0)">设定</button>
+    <button onclick="pin(0)">恢复按日期</button>
+  </div>
+  <div class="muted" style="margin-top:6px">学习台是「缺勤自动顺延」，所以第 N 天不等于日历第 N 天。上班后如果发现差了一天，在这里填对的学习日号（钉住），刷新后所有设备按你钉的走。</div>
+</div>
+
+<div id="box"></div>
+
+<div class="card">
+  <h2 style="margin-top:0">✅ 打卡 · 把完成情况带回家</h2>
+  <div class="muted" style="margin-bottom:8px">在这台设备勾完，点下面按钮复制「打卡码」，微信发给自己；回家打开学习台 → 进度页 → 粘进「导入打卡码」即可写进学习台记录。</div>
+  <button class="p" onclick="makeCode()">📋 生成打卡码并复制</button>
+  <textarea id="code" placeholder="打卡码会出现在这里；也可以把下面这行粘回学习台：" readonly style="margin-top:8px"></textarea>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">🤖 问 AI</h2>
+  <div class="hint" id="aiHint">正在探测能不能连上家里的学习台…</div>
+  <textarea id="q" placeholder="例如：unittest 里的 assertEqual 到底怎么用？" style="margin-top:8px"></textarea>
+  <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="p" onclick="ask()">问</button>
+    <button onclick="location.href='#'+cur()">刷新连接状态</button>
+  </div>
+  <pre id="ans" style="display:none"></pre>
+</div>
+
+<script>
+var DAYS=[{"n":1,"t":"Python初体验：环境、变量与数据类型","k":["打开VS Code，运行第一个Python程序(print Hello)","跟着教程在交互式解释器里练10个表达式(算术/字符串/变量)","用input依次询问城市、年龄、爱好，再用f-string拼成一句自我介绍输出。"],"hw":{"t":"自我介绍生成器","d":"写一个程序：input()依次问姓名、专业、今天心情，最后用一条print()输出一句话自我介绍。要求：至少用到2个变量和1次f-string格式化。","e":"示例输出：大家好，我是社会学专业的邹小雨，今天心情不错！"},"kp":["print()/input()","变量与赋值","int/float/str类型","注释 #"],"r":[],"prod":""},{"n":2,"t":"条件判断：让程序学会做选择","k":["精读条件判断章节，抄写3个例子后合上书自己重写","在解释器里测试 and/or/not 的组合真值","输入百分制分数，用and/or组合条件判定等级(A/B/C/D)并输出是否及格"],"hw":{"t":"BMI计算器+体测评级","d":"input输入身高(m)和体重(kg)，计算BMI=kg/m^2，按中国标准分：偏瘦/正常/超重/肥胖四档输出。再加防错：输入非数字时用isdigit()判断并友好提示。","e":"输入1.70 65 -> 输出：BMI=22.5，体型正常"},"kp":["if/elif/else","比较运算符","布尔值True/False","逻辑运算and/or/not"],"r":[],"prod":""},{"n":3,"t":"循环：批量干活的效率武器","k":["精读循环章节，理解while与for的区别","手写九九乘法表(嵌套for)","随机生成1-50数字，用while循环让玩家反复猜，提示偏大或偏小直到猜中。"],"hw":{"t":"猜数字游戏","d":"用random.randint(1,100)出题，while循环接收猜测，print提示大了/小了，猜中打印用了几次。选做：限8次机会判负。","e":"输入50 -> 大了！ -> ... -> 恭喜，第6次猜中！"},"kp":["for/while","range()","break/continue","循环嵌套"],"r":[],"prod":""},{"n":4,"t":"容器数据结构：list/tuple/dict/字符串","k":["精读list与tuple章节，重点理解可变与不可变","把通讯录练习改成dict存储：增删查各写一个函数","用split和join把一句话拆成单词列表，再拼回用短横线连接的字符串。"],"hw":{"t":"通讯录管理器(dict版)","d":"用dict存联系人(名字->电话)，循环菜单：1添加 2查找 3删除 4列出全部 5退出。所有操作在一个while True里完成。","e":"菜单循环运转，输入4列出全部联系人"},"kp":["list增删改查","dict键值对","tuple不可变","字符串索引与切片"],"r":[],"prod":""},{"n":5,"t":"函数：把重复代码打包复用","k":["读AI教程汇总的函数三节；用print实测一次默认参数与位置参数的差异（各调用两次）","把昨天通讯录作业的菜单打印部分抽成一个 show_menu() 函数，在主程序里调用它","写一个带默认参数的问候函数，再写一个接收任意数量参数的求和函数各调用一次。"],"hw":{"t":"重构：工具函数库","d":"新建utils.py，把通讯录里的公共逻辑(如safe_int(s)安全转数字)抽成2-3个函数，主程序import utils调用；每个函数写一行docstring。","e":"主程序变短一半以上，功能不变"},"kp":["def/return","参数与返回值","默认参数","作用域初步"],"r":[],"prod":""},{"n":6,"t":"文件读写与异常处理：程序也要有记忆","k":["精读文件读写章节，理解open/with/编码","把通讯录数据存成JSON，重启程序自动加载","给除法运算包上try/except，捕获除零错误并打印友好提示而不是崩溃。"],"hw":{"t":"存档版通讯录","d":"每次增删后json.dump写入contacts.json；启动时若文件存在则json.load加载。所有input()包异常处理(输入空值/非数字不崩溃)。","e":"关掉程序重开，联系人还在"},"kp":["open()/with","JSON序列化","try/except/finally","常见异常类型"],"r":[],"prod":""},{"n":7,"t":"阶段项目：命令行Todo工具(毕业作品1)","k":["独立设计数据结构(列表存任务字典)，先写设计再写代码","实现：添加/完成/删除/列出/保存 五个功能","为一个小脚本写README.md，说明用途、运行方式和示例输出，再git提交一次。","产品视角：给这个工具写一页迷你PRD——目标用户是谁、解决他什么痛点、核心功能优先级怎么排、成功指标是什么"],"hw":{"t":"Todo命令行工具","d":"完整实现：todo.py 支持 add/done/del/list/自动存档，目标80行以上。自己敲，卡住先想10分钟再问AI。完成后传GitHub(D15正式教git，今天先用AI给的三条命令)。","e":"python todo.py add 学Python 后 list 显示 [ ] 1. 学Python"},"kp":["综合运用本周知识","数据与展示分离","README写作","git基本提交"],"r":[],"prod":""},{"n":8,"t":"环境日：装VS Code·建真实项目·终端跑起来","k":["装好 VS Code，新建文件夹 D:\\我的作品\\todo，在 VS Code 里【打开文件夹】(整个文件夹才叫项目，别只打开单个文件)","在里面新建 todo.py，用 VS Code 的集成终端敲 python todo.py 真跑一次；再故意写错一行，看懂红色报错在说什么","新建 utils.py，把 todo.py 里的一个函数搬过去，在 todo.py 里 from utils import 该函数，跑通(这一步学习台做不到，必须真环境)","用 Python 写文件：写几行代码生成 README.md 和 data.json，跑一次后用资源管理器确认文件真的出现了"],"hw":{"t":"把 todo 搬进真实项目文件夹","d":"把 D7 的 todo 工具搬进 D:\\我的作品\\todo\\，必须拆出 utils.py(至少一个函数从里面 import)；README.md 必须用 Python 代码写出来(不许用记事本)；data.json 必须由程序运行时生成。","e":"在 VS Code 终端敲 python todo.py 能跑；目录里有 todo.py / utils.py / README.md / data.json 四个文件；README 是代码生成的"},"kp":["装 VS Code 并打开项目文件夹","在 VS Code 里新建/保存 .py 文件","在集成终端敲 python xxx.py","两个文件之间的 import 调用","用 Python 生成 README.md 与 json 存档"],"r":[],"prod":""},{"n":9,"t":"列表推导式与常用内建函数","k":["精读切片/迭代/列表生成式三节","用推导式重写第4天的过滤代码(一行顶五行)","用sorted按年龄升序排列人员列表，再用列表推导式筛出成年人姓名。"],"hw":{"t":"成绩单处理器","d":"scores=[(张三,87),(李四,92)...]自编8人。sorted按分数降序、按名字各排一遍；推导式筛90分以上；format对齐输出表格。","e":"输出对齐的成绩排名表"},"kp":["切片语法","列表推导式","sorted(key=)","map/filter"],"r":[],"prod":""},{"n":10,"t":"git 分支与推上 GitHub","k":["分支：新建分支改东西、合并回主分支","远程：配置 GitHub 仓库并 push（我帮你建仓库和配 token）","完成练习：分支开发 + 合并 + 推上 GitHub"],"hw":{"t":"把项目推上 GitHub","d":"创建 GitHub 远程仓库并推送；在 GitHub 网页上能看到你的代码和提交历史","e":"github.com 上能看到项目"},"kp":["branch/merge 的意义","远程仓库 push/pull","冲突是什么"],"r":[],"prod":""},{"n":11,"t":"测试入门：给函数写用例","k":["测试入门：给一个函数写 3 个用例并跑通（unittest 或 assert 都行）","验证测试有用：故意把函数改错，看测试能不能抓住","完成练习：给存档函数写测试"],"hw":{"t":"给核心函数写测试","d":"给项目写 ≥5 个测试用例并全部通过；再故意制造 bug 验证测试会失败；把测试命令写进 README","e":"测试能抓住你犯的错"},"kp":["测试是什么、测什么","assert/unittest 写法","用测试保护重构"],"r":[],"prod":""},{"n":12,"t":"pandas 读筛排存：自己敲一遍","k":["亲手用 read_csv 读自己的数据、看 shape/dtypes/head","筛选与排序：条件过滤 + sort_values（自己敲，不复制 AI 的）","完成练习：读 csv → 筛选 → 排序 → 存成新 csv"],"hw":{"t":"亲手做一个数据筛选","d":"读一个真实 csv，做条件筛选与排序，再导出成新文件，全程自己写不查 AI","e":"能独立完成读-筛-排-存"},"kp":["read_csv 与 DataFrame 基本属性","布尔筛选与排序","to_csv 导出"],"r":[],"prod":""},{"n":13,"t":"groupby 与出图：热力图等","k":["groupby 分组聚合：按类别算均值/计数（你用过，再自己敲一次）","matplotlib/seaborn 出图：柱状图 + 热力图（你最熟的两个）","完成练习：给一份数据出 3 张图并解释每张说明什么"],"hw":{"t":"三张图 + 三句结论","d":"用自己的数据画柱状图、分布图、热力图各一张，每张下面写一句'这张图说明什么'","e":"图 + 结论都能讲清"},"kp":["groupby 聚合语法","matplotlib/seaborn 选图原则","图表要能支撑结论"],"r":[],"prod":""},{"n":14,"t":"SQL 基础：查询与增删改","k":["SELECT / WHERE / ORDER BY / LIMIT：自己写查询","增删改 INSERT/UPDATE/DELETE（知道能改就行）","完成练习：对通讯录建个表并查询"],"hw":{"t":"SQL 查询练习","d":"用 SQLite 建一张联系人表(至少 10 行)，完成 5 个查询：全部/按姓名查/按条件筛/排序/取前 3","e":"5 个查询都能跑出结果"},"kp":["SQL 基本查询结构","条件与排序","增删改语句"],"r":[],"prod":""},{"n":15,"t":"SQL 聚合与 JOIN","k":["聚合：COUNT/SUM/AVG/MIN/MAX + GROUP BY","JOIN：把两张表连起来查（内连接够用）","完成练习：统计每个分类的数量"],"hw":{"t":"分组统计查询","d":"用 GROUP BY 完成 3 个统计查询，再把两张表 JOIN 一次出结果","e":"统计与多表查询都能写"},"kp":["聚合函数与 GROUP BY","JOIN 的作用与写法","多表查询思路"],"r":[],"prod":""},{"n":16,"t":"SQL 窗口函数与分析查询","k":["窗口函数入门：ROW_NUMBER/RANK 各写一次","子查询与 CTE：把复杂查询拆开","完成练习：取每个分组前 3 名"],"hw":{"t":"阶段小项目：分析型查询集","d":"针对一份真实数据写 6 个查询(含 1 个 JOIN、1 个窗口函数)，配 3 句业务解读","e":"6 个查询 + 解读"},"kp":["窗口函数与 OVER","子查询与 CTE","复杂查询的拆解"],"r":[],"prod":""},{"n":17,"t":"HTTP 与 Flask 起步","k":["HTTP 是什么：请求/响应/状态码/URL 会看就行","Flask 起步：写第一个 @app.route 页面","完成练习：做一个只读信息页"],"hw":{"t":"第一个 Flask 页面","d":"写一个 Flask 应用，显示你的项目信息(读 README 渲染出来)，命令行能跑起来","e":"http://127.0.0.1:5000 能看到页面"},"kp":["HTTP 请求响应结构","路由与 URL","Flask 应用结构"],"r":[],"prod":""},{"n":18,"t":"模板传参与表单提交","k":["模板与传参：把数据从后端传到页面显示","表单：接收一次 POST 提交并存进 json","完成练习：做一个能提交的小表单"],"hw":{"t":"可提交的小应用","d":"做一个表单页，提交的数据追加写入 json 文件并显示在页面上","e":"提交后能看到数据并落盘"},"kp":["Jinja 模板与变量","GET vs POST","表单提交与后端接收"],"r":[],"prod":""},{"n":19,"t":"接入 SQLite 数据库","k":["数据库接入：用 sqlite 存数据（不是 json 文件了）","把上面的 json 版改成数据库版（数据量大了必须这样）","完成练习：换成本地数据库"],"hw":{"t":"换成数据库版","d":"把上一天的应用改成 SQLite 存储，功能不变","e":"数据存在数据库里"},"kp":["sqlite 基本用法","为什么数据多了要用数据库","从文件到数据库的迁移"],"r":[],"prod":""},{"n":20,"t":"REST API 与前后端联调","k":["REST API：GET/POST 返回 json","前后端联调：用 requests 调自己的接口","完成练习：写 3 个接口并用 requests 测通"],"hw":{"t":"阶段项目：带接口的小 Web 应用","d":"把你的项目加上 3 个 REST 接口并写接口文档.md；用 requests 脚本验证每个接口","e":"接口可用 + 文档齐全"},"kp":["REST 约定与接口设计","requests 客户端调用","接口文档怎么写"],"r":[],"prod":""},{"n":21,"t":"工程化交付：打包给别人用","k":["工程化交付：README/测试/依赖清单/打包一次做完","完成练习：把你的项目打包成别人能直接用的东西"],"hw":{"t":"工程化交付","d":"给项目补齐 README/测试/requirements，交给一个同学按说明跑通并记下他的问题","e":"陌生人能一次跑通"},"kp":["交付物清单","打包与依赖声明","让陌生人 3 分钟跑起来"],"r":[],"prod":""},{"n":22,"t":"前端够用版：HTML/CSS/JS","k":["前端够用版：HTML 结构/CSS 布局/JS 交互，能看懂能改就行","用 Flexbox 给你的项目介绍页排版","完成练习：给页面加 2 个交互"],"hw":{"t":"项目介绍页","d":"给项目写一个介绍页：结构语义化 + Flexbox 排版 + 至少 2 个交互(展开收起/切换)","e":"页面像成品"},"kp":["HTML 语义化标签","Flexbox 布局","JS 事件与 DOM"],"r":[],"prod":""},{"n":23,"t":"数据指标：DAU/留存/漏斗/A-B","k":["数据指标基础：DAU/留存/转化怎么定义与计算","漏斗与留存曲线；A/B 测试在做什么","完成练习：给自己的项目定义 5 个指标"],"hw":{"t":"指标字典","d":"为你的项目(或观察的产品)定义 5 个指标：定义/计算口径/数据来源，写成一页文档","e":"研发不用问你也能算"},"kp":["指标口径与北极星指标","漏斗/留存分析","A/B 测试基本原理"],"r":[],"prod":""},{"n":24,"t":"用户故事与用户调研","k":["用户故事与验收标准：作为谁想做什么以便什么","用户调研怎么做：问卷设计 + 3 人访谈（你的社会学强项）","完成练习：把一个功能写成 5 条用户故事并做一次小调研"],"hw":{"t":"用户故事 + 小调研","d":"产出 5 条用户故事(含验收标准) + 访谈 3 人的记录与 3 条洞察","e":"洞察有原始记录支撑"},"kp":["用户故事与 MoSCoW 优先级","问卷避免引导性提问","从访谈记录提炼洞察"],"r":[],"prod":""},{"n":25,"t":"竞品拆解与 PRD","k":["竞品拆解：拆 3 个你常用的 App 的一个核心功能","画低保真原型（纸笔就行，别追求好看）","写一份完整 PRD：背景/目标/故事/功能/异常/不做什么"],"hw":{"t":"阶段项目：完整需求包","d":"交付需求包：竞品拆解 + 5 屏低保真原型 + PRD(含不做什么清单)","e":"研发看完能估工作量"},"kp":["竞品拆解框架","低保真的目的","PRD 标准结构与范围边界"],"r":[],"prod":""},{"n":26,"t":"作品集与简历改造","k":["作品集：GitHub 主页改造 + 每个仓库 README 重写","简历项目经历怎么写（动词+做法+技术+结果）","完成练习：产出 3 条项目经历"],"hw":{"t":"作品集改造","d":"GitHub 主页 + 2 个仓库 README 重写 + 3 条简历项目条目","e":"陌生人 3 分钟能懂你做过什么"},"kp":["README 的信息结构","项目经历写法 STAR","简历关键词"],"r":[],"prod":""},{"n":27,"t":"收尾：总结与下一步路线","k":["收尾：三个月总结 + 下一步路线（考研与否这时可以定了）","投递准备：找实习渠道 + 做一份目标岗位清单","完成练习：写一份下一步 3 个月计划"],"hw":{"t":"阶段收尾：总结与路线","d":"产出 docs/三个月总结.md + docs/下一步路线.md（含考研与否的结论与理由）+ ≥8 个目标岗位清单","e":"路线明确、有下一步动作"},"kp":["阶段复盘方法","投递渠道与岗位拆解","路线决策"],"r":[],"prod":""}];
+var START="2026-09-26";
+var KEY="sb_tasks_v1";
+var off=0, home=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function idxOf(ds){return Math.round((new Date(ds+'T00:00:00')-new Date(START+'T00:00:00'))/864e5);}
+/* 学习台用「缺勤自动顺延」，日历日期未必等于当天学的 Dn。
+   所以支持 ?day=N 手动钉住学习日，并记住（学习台首页也有同一个 ?day= 入口）。 */
+function pinned(){try{var v=localStorage.getItem('sb_pin_day');return v?parseInt(v,10):0;}catch(e){return 0;}}
+function pin(n){
+  if(n){localStorage.setItem('sb_pin_day',String(n));}
+  else{localStorage.removeItem('sb_pin_day');}
+  render();
+}
+function cur(){
+  var m=location.search.match(/[?&]day=(\d+)/);
+  if(m){try{localStorage.setItem('sb_pin_day',m[1]);}catch(e){}}
+  var p=pinned();
+  if(p) return dayAt(p-1);
+  return todayStr();
+}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
+function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
+function key(){var ds=cur();return ds+('#'+(off>=0?'+':'')+off);}
+function rec(){var s=load();return s[key()]||{t:0,h:0};}
+function setRec(r){var s=load();s[key()]=r;save(s);}
+function go(d){off=(d===0?0:off+d);render();}
+function tick(i){var r=rec(),a=r.t.slice();if(a[i])a[i]=0;else a[i]=1;r.t=a;setRec(r);render();}
+function tickHw(){var r=rec();r.h=r.h?0:1;setRec(r);render();}
+function prog(r){var d=DAYS[idxOf(cur())+off];if(!d)return '';var n=d.t.length+(d.hw.t?1:0);
+  var c=r.t.filter(Boolean).length+(r.h?1:0);return c+'/'+n;}
+function render(){
+  var i=idxOf(cur())+off, d=DAYS[i], box=document.getElementById('box');
+  document.getElementById('sub').textContent='学习日 D'+(i+1)+' · '+cur()+(off?'（'+off+' 天）':'');
+  if(!d){box.innerHTML='<div class="card">这一天不在计划内（计划共 '+DAYS.length+' 天，D1 起于 '+START+'）。</div>';return;}
+  var r=rec(), h='';
+  h+='<div class="card"><div class="big">D'+(i+1)+' '+esc(d.t)+'</div>';
+  h+='<div class="muted" style="margin-top:4px">进度 '+prog(r)+'</div>';
+  if(d.kp.length) h+='<div style="margin-top:10px">'+(d.kp.length?'':'')+
+    d.kp.map(function(k){return '<span class="pill">'+esc(k)+'</span>';}).join('')+'</div>';
+  h+='</div>';
+  h+='<div class="card"><h2 style="margin-top:0">任务</h2>';
+  d.t.forEach(function(t,n){
+    h+='<div class="task'+(r.t[n]?' done':'')+'"><button class="tick'+(r.t[n]?' on':'')+'" onclick="tick('+n+')">✓</button>'+
+       '<div class="txt">'+esc(t)+'</div></div>';
+  });
+  if(d.hw.t){
+    h+='<div class="task'+(r.h?' done':'')+'"><button class="tick'+(r.h?' on':'')+'" onclick="tickHw()">✓</button>'+
+       '<div class="txt"><b>'+esc(d.hw.t)+'</b><br><span class="muted">'+esc(d.hw.d)+'</span>'+
+       (d.hw.e?'<br><span class="muted">期望：'+esc(d.hw.e)+'</span>':'')+'</div></div>';
+  }
+  h+='</div>';
+  if(d.r.length){
+    h+='<div class="card"><h2 style="margin-top:0">今天要读的原文</h2>';
+    d.r.forEach(function(x){h+='<div style="margin-bottom:6px">· <a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.title)+'</a></div>';});
+    h+='<div class="muted" style="margin-top:6px">不想读原文也行——回家让学习台生成「今日教程汇总」，那里面 AI 已经按知识点讲过了。</div></div>';
+  }
+  if(d.prod) h+='<div class="card"><h2 style="margin-top:0">产品任务</h2><div>'+esc(d.prod)+'</div></div>';
+  box.innerHTML=h;
+  var c=document.getElementById('code');
+  var i=idxOf(cur())+off, d=DAYS[i];
+  c.value='SB1 D'+(i+1)+' '+cur()+' '+(d?d.k.length:0)+' '+
+          r.t.map(function(x){return x?'1':'0'}).join('')+(r.h?'1':'0');
+}
+function makeCode(){
+  var c=document.getElementById('code'); c.select();
+  try{ document.execCommand('copy'); c.setSelectionRange(0,0); alert('打卡码已复制，微信发给自己即可'); }
+  catch(e){ alert('请手动全选复制下面的打卡码'); }
+}
+function showAll(){
+  var s=load(), h='<div class="card"><h2 style="margin-top:0">全部 '+DAYS.length+' 天</h2>';
+  DAYS.forEach(function(d,i){
+    var ds=dayAt(i), r=s[ds]||{}, n=d.t.length+(d.hw.t?1:0);
+    var c=r.t?r.t.filter(Boolean).length:0; c+=r.h?1:0;
+    h+='<div class="task'+(c>=n&&n?' done':'')+'"><button class="tick'+(c>=n&&n?' on':'')+
+       '" onclick="jump('+i+')">✓</button><div class="txt">D'+(i+1)+' '+esc(d.t)+
+       '<br><span class="muted">'+ds+' · '+c+'/'+n+'</span></div></div>';
+  });
+  h+='<button style="margin-top:10px" onclick="render()">返回今天</button></div>';
+  document.getElementById('box').innerHTML=h;
+}
+function dayAt(i){var d=new Date(START+'T00:00:00');d.setDate(d.getDate()+i);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function jump(i){off=i-idxOf(todayStr());render();window.scrollTo(0,0);}
+function ask(){
+  var q=document.getElementById('q').value.trim(); if(!q)return;
+  var a=document.getElementById('ans'); a.style.display='block'; a.textContent='…';
+  fetch(home+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({q:q,date:cur()})})
+   .then(function(r){return r.json();})
+   .then(function(j){a.textContent=j.reply||j.error||JSON.stringify(j);})
+   .catch(function(e){a.textContent='连不上家里的学习台（'+e+'）。\n可以微信发给自己，回家在学习台的 AI 老师页问；或者用手机打开学习台。';});
+}
+function probe(){
+  var h=document.getElementById('aiHint');
+  if(location.protocol==='file:'){h.textContent='这是本地文件，问AI用不了；把网址存到浏览器书签、联网时用公网地址打开即可。';return;}
+  h.textContent='正在探测学习台…';
+  home=location.origin;
+  fetch('/api/today',{cache:'no-store'}).then(function(r){ return r.ok?r.json():Promise.reject(0);})
+   .then(function(){h.innerHTML='<span class="ok">已连上学习台</span>，可以直接问。';})
+   .catch(function(){home=null;h.innerHTML='没连上学习台（这台设备访问不到家里的电脑）。看任务、打勾、打卡码<b>照常可用</b>；问 AI 请微信发给自己，回家或用手机问。';});
+}
+render(); probe();
+</script></body></html>

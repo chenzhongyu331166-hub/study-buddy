@@ -321,6 +321,51 @@ def api_today():
 
 
 # ---------- 打卡 ----------
+@app.route("/api/checkin/import", methods=["POST"])
+def api_checkin_import():
+    """导入「今日任务」静态页生成的打卡码，把公司/手机上的勾选写回真实记录。
+
+    打卡码格式（静态页生成，见 pages/build_pages.py）：
+        SB1 D<学习日号> <日期> <当天任务条数> <若干位0/1> <作业位0/1>
+    例：SB1 D11 2026-10-06 3 101 1
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    raw = str(body.get("code") or "").strip()
+    m = re.match(r"^SB1\s+D(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d+)\s+([01]+)\s+([01])$", raw)
+    if not m:
+        return jsonify({"error": "打卡码格式不对：应为 SB1 D11 2026-10-06 3 101 1"}), 400
+    day_no, date_str, n_task, bits, hw = int(m.group(1)), m.group(2), int(m.group(3)), m.group(4), m.group(5)
+    if not 1 <= day_no <= len(DAYS):
+        return jsonify({"error": "学习日 %d 不在计划内（共%d天）" % (day_no, len(DAYS))}), 400
+    expect = day_index(date_str)
+    if expect is not None and expect != day_no:
+        return jsonify({"error": "打卡码里的学习日(D%d)和日期(%s)对不上，"
+                                 "该日期应是 D%d。检查一下是不是钉错学习日了。"
+                                % (day_no, date_str, expect)}), 400
+    if len(bits) != n_task:
+        return jsonify({"error": "打卡码里写了 %d 位任务，但当天任务是 %d 条" % (len(bits), n_task)}), 400
+    before = set(earned(get_state(), compute_stats(get_state())))
+    st = get_state()
+    with _LOCK:
+        e = day_entry(st, date_str)
+        e["tasks"] = [c == "1" for c in bits]
+        e["hw"] = hw == "1"
+        e["updated"] = datetime.datetime.now().isoformat(timespec="seconds")
+        e["from"] = "static-page"
+        save_state(st)
+    stats = compute_stats(st)
+    after = set(earned(st, stats))
+    done_n = sum(e["tasks"]) + (1 if e["hw"] else 0)
+    return jsonify({
+        "ok": 1, "date": date_str, "day": day_no,
+        "entry": e, "stats": stats,
+        "done": "%d/%d" % (done_n, n_task + 1),
+        "new_achievements": [{"id": a["id"], "name": a["name"], "desc": a["desc"]}
+                             for a in ACHIEVEMENTS if a["id"] in after - before],
+        "achievements": achievement_cards(st, stats),
+    })
+
+
 @app.route("/api/checkin", methods=["POST"])
 def api_checkin():
     body = request.get_json(force=True, silent=True) or {}

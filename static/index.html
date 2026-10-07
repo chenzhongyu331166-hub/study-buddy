@@ -420,6 +420,17 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     </div>
     <div id="taskProgress" style="margin-top:6px;font-size:13px;color:var(--dim)"></div>
   </div>
+
+  <div class="card">
+    <h2>导入打卡码 <span class="tag">公司电脑 / 手机上的勾选带回家</span></h2>
+    <div class="muted" style="margin-bottom:8px">上班时用「今日任务」网页（GitHub Pages 免费网址，任何浏览器打开即用）勾完，点【生成打卡码并复制】→ 微信发给自己 → 粘到这里。<b>学习日号必须对得上</b>，对不上会拒收并告诉你正确值。</div>
+    <textarea id="importCode" rows="2" placeholder="SB1 D11 2026-10-06 3 101 1" style="font-family:Consolas,monospace;font-size:13px"></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn" onclick="importCode()">📥 导入打卡码</button>
+      <span id="importMsg" class="muted"></span>
+    </div>
+    <div id="importAch" style="margin-top:8px"></div>
+  </div>
 </div>
 </section>
 
@@ -1373,6 +1384,23 @@ async function workReview(){
     fb.scrollIntoView({behavior:'smooth'});
     $('#workMsg').innerHTML=`审阅完成：${esc(r.project)} · ${r.files.length} 个文件 / ${r.total} 字符 · 模型 ${esc(r.model||'')}`;
   }catch(e){fb.textContent='⚠ '+e.message}
+}
+
+// ---------- 导入打卡码（公司/手机 → 学习台） ----------
+async function importCode(){
+  const code=($('#importCode')||{}).value||'';
+  const msg=$('#importMsg'),ach=$('#importAch');
+  if(!code.trim()){msg.textContent='先把打卡码粘进来';return;}
+  msg.textContent='导入中…';
+  try{
+    const r=await post('/api/checkin/import',{code:code.trim()});
+    msg.innerHTML='<b style="color:var(--ok)">已导入</b> · D'+r.day+' · '+esc(r.date)+' · 完成 '+esc(r.done);
+    ach.innerHTML=(r.new_achievements||[]).length
+      ? '<div class="hintbox on">🎉 解锁成就：'+r.new_achievements.map(a=>'<b>'+esc(a.name)+'</b> '+esc(a.desc)).join(' · ')+'</div>' : '';
+    $('#importCode').value='';
+    await renderProgress();
+    toast('打卡码已写入学习台记录');
+  }catch(e){msg.innerHTML='<span style="color:var(--bad)">'+esc(e.message)+'</span>'}
 }
 
 // ---------- 进度 ----------
