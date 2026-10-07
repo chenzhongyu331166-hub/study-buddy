@@ -157,9 +157,10 @@ function render(){
   if(d.prod) h+='<div class="card"><h2 style="margin-top:0">产品任务</h2><div>'+esc(d.prod)+'</div></div>';
   box.innerHTML=h;
   var c=document.getElementById('code');
-  var i=idxOf(cur())+off, d=DAYS[i];
-  c.value='SB1 D'+(i+1)+' '+cur()+' '+(d?d.k.length:0)+' '+
-          r.t.map(function(x){return x?'1':'0'}).join('')+(r.h?'1':'0');
+  var i=idxOf(cur())+off, d=DAYS[i], n=d?d.k.length:0;
+  /* 位数必须等于当天任务条数，没勾的补 0，否则学习台会拒收 */
+  var bits='';for(var q=0;q<n;q++){bits+=(r.t[q]?'1':'0');}
+  c.value='SB1 D'+(i+1)+' '+cur()+' '+n+' '+bits+' '+(r.h?'1':'0');
 }
 function makeCode(){
   render();                                  // 先按当前勾选刷新打卡码
