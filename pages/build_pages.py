@@ -173,12 +173,16 @@ function syncDay(){
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
 function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
 function key(){var ds=cur();return ds+('#'+(off>=0?'+':'')+off);}
-function rec(){var s=load();return s[key()]||{t:0,h:0};}
+function rec(){var s=load(),r=s[key()]||{};
+  if(!Array.isArray(r.t))r.t=[];      // 第一次打开没有记录，必须兜住，否则 .filter/.slice 报错整页白屏
+  if(!r.h)r.h=0;
+  return r;}
 function setRec(r){var s=load();s[key()]=r;save(s);}
 function go(d){off=(d===0?0:off+d);render();}
 function tick(i){var r=rec(),a=r.t.slice();if(a[i])a[i]=0;else a[i]=1;r.t=a;setRec(r);render();}
 function tickHw(){var r=rec();r.h=r.h?0:1;setRec(r);render();}
-function prog(r){var d=DAYS[idxOf(cur())+off];if(!d)return '';var n=d.t.length+(d.hw.t?1:0);
+function prog(r){var d=DAYS[idxOf(cur())+off];if(!d)return '';
+  var n=d.k.length+(d.hw.t?1:0);
   var c=r.t.filter(Boolean).length+(r.h?1:0);return c+'/'+n;}
 function render(){
   var i=idxOf(cur())+off, d=DAYS[i], box=document.getElementById('box');
@@ -191,7 +195,7 @@ function render(){
     d.kp.map(function(k){return '<span class="pill">'+esc(k)+'</span>';}).join('')+'</div>';
   h+='</div>';
   h+='<div class="card"><h2 style="margin-top:0">任务</h2>';
-  d.t.forEach(function(t,n){
+  d.k.forEach(function(t,n){
     h+='<div class="task'+(r.t[n]?' done':'')+'"><button class="tick'+(r.t[n]?' on':'')+'" onclick="tick('+n+')">✓</button>'+
        '<div class="txt">'+esc(t)+'</div></div>';
   });
@@ -214,15 +218,20 @@ function render(){
           r.t.map(function(x){return x?'1':'0'}).join('')+(r.h?'1':'0');
 }
 function makeCode(){
-  var c=document.getElementById('code'); c.select();
-  try{ document.execCommand('copy'); c.setSelectionRange(0,0); alert('打卡码已复制，微信发给自己即可'); }
-  catch(e){ alert('请手动全选复制下面的打卡码'); }
+  render();                                  // 先按当前勾选刷新打卡码
+  var c=document.getElementById('code'); c.focus(); c.select();
+  var ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  if(!ok&&navigator.clipboard){navigator.clipboard.writeText(c.value).then(
+    function(){c.setSelectionRange(0,0);alert('打卡码已复制，微信发给自己即可');});return;}
+  if(ok){c.setSelectionRange(0,0);alert('打卡码已复制，微信发给自己即可');}
+  else{alert('请手动全选复制下面的打卡码');}
 }
 function showAll(){
   var s=load(), h='<div class="card"><h2 style="margin-top:0">全部 '+DAYS.length+' 天</h2>';
   DAYS.forEach(function(d,i){
-    var ds=dayAt(i), r=s[ds]||{}, n=d.t.length+(d.hw.t?1:0);
-    var c=r.t?r.t.filter(Boolean).length:0; c+=r.h?1:0;
+    var ds=dayAt(i), r=s[ds]||{}, n=d.k.length+(d.hw.t?1:0);
+    var c=(Array.isArray(r.t)?r.t.filter(Boolean).length:0)+(r.h?1:0);
     h+='<div class="task'+(c>=n&&n?' done':'')+'"><button class="tick'+(c>=n&&n?' on':'')+
        '" onclick="jump('+i+')">✓</button><div class="txt">D'+(i+1)+' '+esc(d.t)+
        '<br><span class="muted">'+ds+' · '+c+'/'+n+'</span></div></div>';
