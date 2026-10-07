@@ -103,7 +103,8 @@ pre{white-space:pre-wrap;word-break:break-word;background:#131722;border:1px sol
     <button onclick="pin(parseInt(document.getElementById('pinBox').value,10)||0)">设定</button>
     <button onclick="pin(0)">恢复按日期</button>
   </div>
-  <div class="muted" style="margin-top:6px">学习台是「缺勤自动顺延」，所以第 N 天不等于日历第 N 天。上班后如果发现差了一天，在这里填对的学习日号（钉住），刷新后所有设备按你钉的走。</div>
+  <div class="muted" style="margin-top:6px" id="syncTag">正在向学习台问「今天学的是第几天」…</div>
+  <div class="muted" style="margin-top:6px">学习台是「缺勤自动顺延」的，所以日历第 N 天 ≠ 学的 DN。上班后如果发现差了一天，可以在这里填对的学习日号（钉住）；不钉就跟着学习台自动同步。</div>
 </div>
 
 <div id="box"></div>
@@ -148,7 +149,26 @@ function cur(){
   if(m){try{localStorage.setItem('sb_pin_day',m[1]);}catch(e){}}
   var p=pinned();
   if(p) return dayAt(p-1);
+  if(SYNC.day) return SYNC.date;      // 学习台发布的真实学习日
   return todayStr();
+}
+/* 学习台是「缺勤自动顺延」，日历第 N 天 ≠ 学的 DN。
+   学习台每天会把真实 Dn 写进 docs/today.json 并推到 GitHub Pages，
+   这里读它自动跟随；读不到（没网/还没发布）再退回按日期算，
+   也可以用上面的「学习日钉住」手动钉。 */
+var SYNC={day:0,date:''};
+function syncDay(){
+  if(pinned()){return;}
+  fetch('today.json?r='+Date.now(),{cache:'no-store'}).then(function(r){
+    if(!r.ok){throw 0;}
+    return r.json();
+  }).then(function(j){
+    if(j&&j.day){SYNC={day:j.day,date:j.date};
+      var el=document.getElementById('syncTag');
+      if(el){el.innerHTML='学习台同步：正在学 <b>D'+j.day+'</b>（'+esc(j.date)+
+                '，共'+j.total+'天）· <a href="javascript:void(0)" onclick="pin(0);location.reload()">改成手动</a>';}
+      render();}
+  }).catch(function(){});
 }
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
 function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
@@ -231,7 +251,7 @@ function probe(){
    .then(function(){h.innerHTML='<span class="ok">已连上学习台</span>，可以直接问。';})
    .catch(function(){home=null;h.innerHTML='没连上学习台（这台设备访问不到家里的电脑）。看任务、打勾、打卡码<b>照常可用</b>；问 AI 请微信发给自己，回家或用手机问。';});
 }
-render(); probe();
+render(); probe(); syncDay();
 </script></body></html>
 """
 
