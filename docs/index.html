@@ -42,22 +42,22 @@ pre{white-space:pre-wrap;word-break:break-word;background:#131722;border:1px sol
 </div>
 <div class="card" style="padding:10px 14px">
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <span class="muted">学习日钉住</span>
+    <span class="muted">手动钉住学习日</span>
     <input id="pinBox" type="number" min="1" max="27" style="width:80px;background:#131722;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px">
     <button onclick="pin(parseInt(document.getElementById('pinBox').value,10)||0)">设定</button>
-    <button onclick="pin(0)">恢复按日期</button>
+    <button onclick="pin(0)">恢复自动</button>
   </div>
-  <div class="muted" style="margin-top:6px" id="syncTag">正在向学习台问「今天学的是第几天」…</div>
-  <div class="muted" style="margin-top:6px">学习台是「缺勤自动顺延」的，所以日历第 N 天 ≠ 学的 DN。上班后如果发现差了一天，可以在这里填对的学习日号（钉住）；不钉就跟着学习台自动同步。</div>
+  <div class="muted" style="margin-top:6px" id="dayTag"></div>
+  <div class="muted" style="margin-top:6px">Dn = 第一个还没做完的天（跟学习台一致：今天没做完就顺延到明天，不跳天）。空浏览器自动读学习台推上来的 progress.json 从正确那天开始；只读不对才用这里手动钉。</div>
 </div>
 
 <div id="box"></div>
 
 <div class="card">
   <h2 style="margin-top:0">✅ 打卡 · 把完成情况带回家</h2>
-  <div class="muted" style="margin-bottom:8px">在这台设备勾完，点下面按钮复制「打卡码」，微信发给自己；回家打开学习台 → 进度页 → 粘进「导入打卡码」即可写进学习台记录。</div>
+  <div class="muted" style="margin-bottom:8px">在这台设备勾完，点下面按钮复制「打卡码」，微信发给自己。回家双击 <b>导入打卡码.bat</b>（在 D:\VibeBuddy\study-buddy 里）把它粘进去，学习台记录就更新了 —— 不用重启任何东西。</div>
   <button class="p" onclick="makeCode()">📋 生成打卡码并复制</button>
-  <textarea id="code" placeholder="打卡码会出现在这里；也可以把下面这行粘回学习台：" readonly style="margin-top:8px"></textarea>
+  <textarea id="code" placeholder="打卡码会出现在这里；复制它，回家用「导入打卡码.bat」写回学习台" readonly style="margin-top:8px"></textarea>
 </div>
 
 <div class="card">
@@ -86,56 +86,64 @@ function pinned(){try{var v=localStorage.getItem('sb_pin_day');return v?parseInt
 function pin(n){
   if(n){localStorage.setItem('sb_pin_day',String(n));}
   else{localStorage.removeItem('sb_pin_day');}
-  render();
+  off=0;render();
 }
-function cur(){
-  var m=location.search.match(/[?&]day=(\d+)/);
-  if(m){try{localStorage.setItem('sb_pin_day',m[1]);}catch(e){}}
-  var p=pinned();
-  if(p) return dayAt(p-1);
-  if(SYNC.day) return SYNC.date;      // 学习台发布的真实学习日
-  return todayStr();
-}
-/* 学习台是「缺勤自动顺延」，日历第 N 天 ≠ 学的 DN。
-   学习台每天会把真实 Dn 写进 docs/today.json 并推到 GitHub Pages，
-   这里读它自动跟随；读不到（没网/还没发布）再退回按日期算，
-   也可以用上面的「学习日钉住」手动钉。 */
-var SYNC={day:0,date:''};
-function syncDay(){
-  if(pinned()){return;}
-  fetch('today.json?r='+Date.now(),{cache:'no-store'}).then(function(r){
-    if(!r.ok){throw 0;}
-    return r.json();
-  }).then(function(j){
-    if(j&&j.day){SYNC={day:j.day,date:j.date};
-      var el=document.getElementById('syncTag');
-      if(el){el.innerHTML='学习台同步：正在学 <b>D'+j.day+'</b>（'+esc(j.date)+
-                '，共'+j.total+'天）· <a href="javascript:void(0)" onclick="pin(0);location.reload()">改成手动</a>';}
-      render();}
-  }).catch(function(){});
-}
-function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
-function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
-function key(){var ds=cur();return ds+('#'+(off>=0?'+':'')+off);}
-function rec(){var s=load(),r=s[key()]||{};
+/* 学习日 Dn 和日历日期无关 —— 跟学习台一样：
+   Dn = 「第一个还没做完的天」。今天没做完，明天就还是这一天（顺延，不跳天）。
+   全部做完了才停在最后一天。localStorage 里按 Dn 存，所以勾完自动前进。 */
+function recAt(i){var s=load(),r=s['D'+(i+1)]||{};
   if(!Array.isArray(r.t))r.t=[];      // 第一次打开没有记录，必须兜住，否则 .filter/.slice 报错整页白屏
   if(!r.h)r.h=0;
   return r;}
-function setRec(r){var s=load();s[key()]=r;save(s);}
+function setRecAt(i,r){var s=load();s['D'+(i+1)]=r;save(s);}
+function totalOf(d){return d.k.length+(d.hw.t?1:0);}
+function doneAt(i){var d=DAYS[i];if(!d)return 0;var r=recAt(i);
+  return r.t.filter(Boolean).length+(r.h?1:0);}
+function fullAt(i){var d=DAYS[i];if(!d)return false;var n=totalOf(d);
+  if(PROG&&PROG.done&&PROG.done.indexOf(i+1)>=0)return true;  /* 学习台说已完成的天 */
+  return n>0&&doneAt(i)>=n;
+}
+function autoDay(){
+  for(var i=0;i<DAYS.length;i++){if(!fullAt(i))return i;}
+  return DAYS.length-1;
+}
+/* 公司电脑是空的，本地勾选记录没有。progress.json 是学习台自己的脚本
+   把「你实际做到第几天」推上来的，空浏览器读他从正确那天开始。 */
+var PROG=null;
+function fetchProg(){
+  fetch('progress.json?r='+Date.now(),{cache:'no-store'}).then(function(r){
+    if(!r.ok)throw 0;return r.json();}).then(function(j){
+    if(j&&j.current){PROG=j;render();}}).catch(function(){});
+}
+function base(){var p=pinned();
+  if(p)return p-1;
+  if(PROG&&PROG.current)return PROG.current-1;   /* 学习台真实进度优先 */
+  return autoDay();
+}
+function dn(){var i=base()+off;return i<0?0:(i>DAYS.length-1?DAYS.length-1:i);}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return {};}}
+function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
+function rec(){return recAt(dn());}
+function setRec(r){setRecAt(dn(),r);}
 function go(d){off=(d===0?0:off+d);render();}
 function tick(i){var r=rec(),a=r.t.slice();if(a[i])a[i]=0;else a[i]=1;r.t=a;setRec(r);render();}
 function tickHw(){var r=rec();r.h=r.h?0:1;setRec(r);render();}
-function prog(r){var d=DAYS[idxOf(cur())+off];if(!d)return '';
-  var n=d.k.length+(d.hw.t?1:0);
-  var c=r.t.filter(Boolean).length+(r.h?1:0);return c+'/'+n;}
+function prog(r){var d=DAYS[dn()];if(!d)return '';
+  return r.t.filter(Boolean).length+(r.h?1:0)+'/'+totalOf(d);}
 function render(){
-  var i=idxOf(cur())+off, d=DAYS[i], box=document.getElementById('box');
-  document.getElementById('sub').textContent='学习日 D'+(i+1)+' · '+cur()+(off?'（'+off+' 天）':'');
+  var i=dn(), d=DAYS[i], box=document.getElementById('box');
+  var sub=document.getElementById('sub');
+  sub.textContent='学习日 D'+(i+1)+' · 今天 '+todayStr()+'（共'+DAYS.length+'天）'+
+                  (off?' · 翻看 '+off+' 天':'');
+  var t=document.getElementById('dayTag');
+  if(t)t.textContent=pinned()?('已手动钉在 D'+pinned())
+    :(PROG&&PROG.current?('学习台同步：正在学 D'+PROG.current+'（截至 '+esc(PROG.date)+'）')
+      :('自动：学到 D'+(autoDay()+1)+'（没做完就顺延）'));
   if(!d){box.innerHTML='<div class="card">这一天不在计划内（计划共 '+DAYS.length+' 天，D1 起于 '+START+'）。</div>';return;}
   var r=rec(), h='';
   h+='<div class="card"><div class="big">D'+(i+1)+' '+esc(d.t)+'</div>';
   h+='<div class="muted" style="margin-top:4px">进度 '+prog(r)+'</div>';
-  if(d.kp.length) h+='<div style="margin-top:10px">'+(d.kp.length?'':'')+
+  if(d.kp.length) h+='<div style="margin-top:10px">'+
     d.kp.map(function(k){return '<span class="pill">'+esc(k)+'</span>';}).join('')+'</div>';
   h+='</div>';
   h+='<div class="card"><h2 style="margin-top:0">任务</h2>';
@@ -156,11 +164,11 @@ function render(){
   }
   if(d.prod) h+='<div class="card"><h2 style="margin-top:0">产品任务</h2><div>'+esc(d.prod)+'</div></div>';
   box.innerHTML=h;
-  var c=document.getElementById('code');
-  var i=idxOf(cur())+off, d=DAYS[i], n=d?d.k.length:0;
-  /* 位数必须等于当天任务条数，没勾的补 0，否则学习台会拒收 */
-  var bits='';for(var q=0;q<n;q++){bits+=(r.t[q]?'1':'0');}
-  c.value='SB1 D'+(i+1)+' '+cur()+' '+n+' '+bits+' '+(r.h?'1':'0');
+  /* 打卡码：Dn + 今天的日历日期 + 位数。位数必须等于当天任务条数，
+     没勾的补 0，否则导入端会拒收。Dn 与日历日期无关，两个都带上，导入端都验。 */
+  var c=document.getElementById('code'), n=d.k.length, bits='';
+  for(var q=0;q<n;q++){bits+=(r.t[q]?'1':'0');}
+  c.value='SB1 D'+(i+1)+' '+todayStr()+' '+n+' '+bits+' '+(r.h?'1':'0');
 }
 function makeCode(){
   render();                                  // 先按当前勾选刷新打卡码
@@ -173,25 +181,22 @@ function makeCode(){
   else{alert('请手动全选复制下面的打卡码');}
 }
 function showAll(){
-  var s=load(), h='<div class="card"><h2 style="margin-top:0">全部 '+DAYS.length+' 天</h2>';
+  var h='<div class="card"><h2 style="margin-top:0">全部 '+DAYS.length+' 天</h2>';
   DAYS.forEach(function(d,i){
-    var ds=dayAt(i), r=s[ds]||{}, n=d.k.length+(d.hw.t?1:0);
-    var c=(Array.isArray(r.t)?r.t.filter(Boolean).length:0)+(r.h?1:0);
-    h+='<div class="task'+(c>=n&&n?' done':'')+'"><button class="tick'+(c>=n&&n?' on':'')+
+    var n=totalOf(d), c=doneAt(i), fin=(n>0&&c>=n);
+    h+='<div class="task'+(fin?' done':'')+'"><button class="tick'+(fin?' on':'')+
        '" onclick="jump('+i+')">✓</button><div class="txt">D'+(i+1)+' '+esc(d.t)+
-       '<br><span class="muted">'+ds+' · '+c+'/'+n+'</span></div></div>';
+       '<br><span class="muted">'+c+'/'+n+'</span></div></div>';
   });
-  h+='<button style="margin-top:10px" onclick="render()">返回今天</button></div>';
+  h+='<button style="margin-top:10px" onclick="pin(0);render()">回到自动（跟着学习日走）</button></div>';
   document.getElementById('box').innerHTML=h;
 }
-function dayAt(i){var d=new Date(START+'T00:00:00');d.setDate(d.getDate()+i);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function jump(i){off=i-idxOf(todayStr());render();window.scrollTo(0,0);}
+function jump(i){pin(i+1);window.scrollTo(0,0);}
 function ask(){
   var q=document.getElementById('q').value.trim(); if(!q)return;
   var a=document.getElementById('ans'); a.style.display='block'; a.textContent='…';
-  fetch(home+'/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({q:q,date:cur()})})
+  fetch(home+'/api/chat/ask',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:q,date:todayStr()})})
    .then(function(r){return r.json();})
    .then(function(j){a.textContent=j.reply||j.error||JSON.stringify(j);})
    .catch(function(e){a.textContent='连不上家里的学习台（'+e+'）。\n可以微信发给自己，回家在学习台的 AI 老师页问；或者用手机打开学习台。';});
@@ -205,5 +210,5 @@ function probe(){
    .then(function(){h.innerHTML='<span class="ok">已连上学习台</span>，可以直接问。';})
    .catch(function(){home=null;h.innerHTML='没连上学习台（这台设备访问不到家里的电脑）。看任务、打勾、打卡码<b>照常可用</b>；问 AI 请微信发给自己，回家或用手机问。';});
 }
-render(); probe(); syncDay();
+render(); probe(); fetchProg();
 </script></body></html>

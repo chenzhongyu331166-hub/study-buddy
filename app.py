@@ -396,13 +396,13 @@ def api_checkin_import():
     day_no, date_str, n_task, bits, hw = int(m.group(1)), m.group(2), int(m.group(3)), m.group(4), m.group(5)
     if not 1 <= day_no <= len(DAYS):
         return jsonify({"error": "学习日 %d 不在计划内（共%d天）" % (day_no, len(DAYS))}), 400
-    expect = day_index(date_str)
-    if expect is not None and expect != day_no:
-        return jsonify({"error": "打卡码里的学习日(D%d)和日期(%s)对不上，"
-                                 "该日期应是 D%d。检查一下是不是钉错学习日了。"
-                                % (day_no, date_str, expect)}), 400
+    # 注意：Dn 和日历日期本来就不相等（缺勤自动顺延），所以这里只各自验，
+    # 绝不能要求「日期对应的天数 == Dn」——那会把正常的顺延判成错。
+    if day_index(date_str) is None:
+        return jsonify({"error": "日期 %s 不在计划区间内" % date_str}), 400
     if len(bits) != n_task:
-        return jsonify({"error": "打卡码里写了 %d 位任务，但当天任务是 %d 条" % (len(bits), n_task)}), 400
+        return jsonify({"error": "打卡码里写了 %d 位任务，但 D%d 当天是 %d 条任务"
+                                % (len(bits), day_no, n_task)}), 400
     before = set(earned(get_state(), compute_stats(get_state())))
     st = get_state()
     with _LOCK:

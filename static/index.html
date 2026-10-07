@@ -423,13 +423,14 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 
   <div class="card">
     <h2>导入打卡码 <span class="tag">公司电脑 / 手机上的勾选带回家</span></h2>
-    <div class="muted" style="margin-bottom:8px">上班时用「今日任务」网页（GitHub Pages 免费网址，任何浏览器打开即用）勾完，点【生成打卡码并复制】→ 微信发给自己 → 粘到这里。<b>学习日号必须对得上</b>，对不上会拒收并告诉你正确值。</div>
-    <textarea id="importCode" rows="2" placeholder="SB1 D11 2026-10-06 3 101 1" style="font-family:Consolas,monospace;font-size:13px"></textarea>
+    <div class="muted" style="margin-bottom:8px">上班时用「今日任务」网页（GitHub Pages 免费网址，任何浏览器打开即用）勾完，点【生成打卡码并复制】→ 微信发给自己。<b>最省事的做法：双击 D:\VibeBuddy\study-buddy\导回打卡码.bat，把打卡码拖进去</b>（不用重启任何东西）。学习日号和日期不用互相换算——缺勤顺延时两者本来就不相等。</div>
+    <textarea id="importCode" rows="2" placeholder="SB1 D11 2026-10-07 3 101 1" style="font-family:Consolas,monospace;font-size:13px"></textarea>
     <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn" onclick="importCode()">📥 导入打卡码</button>
       <span id="importMsg" class="muted"></span>
     </div>
     <div id="importAch" style="margin-top:8px"></div>
+    <div class="muted" style="margin-top:6px">（这个输入框要走服务器，等下次重启学习台后自动生效；在此之前用上面的 .bat 一样能导入。）</div>
   </div>
 </div>
 </section>
