@@ -1053,93 +1053,16 @@ def _safe_name(s):
     return s[:40] or "day"
 
 
-def _qcode_path(pdir, fname, title, body, day):
-    """在项目目录里建一个题文件；已存在则不覆盖，只在缺题目注释时补写。"""
-    pdir.mkdir(parents=True, exist_ok=True)
-    f = pdir / fname
-    if f.exists():
-        try:
-            old = f.read_text(encoding="utf-8", errors="replace")
-        except Exception:
-            old = ""
-        # 已写自己的代码了 → 绝不动它，只把题目注释补到文件最前面(若还没有)
-        if "# ▶ 题目" not in old:
-            f.write_text(body + "\n" + old, encoding="utf-8")
-        return f, True
-    f.write_text(body, encoding="utf-8")
-    return f, False
-
-
-def _qcode_body(kind, head, req, expect, starter, title):
-    lines = ["# ▶ 题目 %s（%s）" % (head, kind),
-             "# 来源：84天速成CS · D%s · %s" % (title[0], title[1]),
-             "#", "# 要求：%s" % req]
-    if expect:
-        lines.append("# 期望：%s" % expect)
-    if starter:
-        lines += ["#", "# 起手代码(可以删掉自己重写)：", starter.rstrip()]
-    lines += ["#", "# ↓↓↓ 你的代码写在这行下面 ↓↓↓", "", "", "# ▶ END"]
-    return "\n".join(lines) + "\n"
+# 注：原 _qcode_path/_qcode_body（替用户在建题文件）已按用户要求删除。
+# 现在学习台绝不往 D:\我的作品 写任何文件——文件全部由用户自己在 VS Code 里建，
+# 学习台只读（/api/work/review 审阅、/api/q/submit 读她指定的真实文件）。
 
 
 @app.route("/api/q/start")
 def api_q_start():
-    """在项目目录里建好题文件并用 VS Code 打开（不覆盖你已写的代码）"""
-    date_str = (request.args.get("date") or "").strip() or default_study_date(get_state())
-    n = day_index(date_str)
-    if n is None:
-        return jsonify({"error": "日期不在计划内"}), 400
-    qn = int(request.args.get("q") or 0)
-    r = work_root()
-    proj = (request.args.get("project") or "").strip()
-    if proj and _project_dir(proj):
-        pdir = _project_dir(proj)
-    else:                                  # 没指定就用 D<n>-<标题> 自动建
-        base = DAYS[n].get("title") or "day%d" % n
-        pdir = r / ("D%d-%s" % (n, _safe_name(base)))
-    pd = apply_track(DAYS.get(n), get_state()) or {}
-    if qn == 0:                            # 作业文件
-        hw = pd.get("hw") or {}
-        body = _qcode_body("课后作业", "hw", hw.get("d", ""), hw.get("e", ""),
-                           "", (n, pd.get("title", "")))
-        fname = "homework.py"
-        kind = "作业"
-    else:
-        dg = load_json(_digest_path(date_str), {})
-        secs = dg.get("sections") or []
-        item, si = None, 0
-        cnt = 0
-        for i, s in enumerate(secs):
-            for ex in (s.get("exercises") or []):
-                cnt += 1
-                if cnt == qn:
-                    item, si = ex, i
-                    break
-            if item:
-                break
-        if not item:
-            return jsonify({"error": "第%s题不存在(先在教程汇总里生成题目)" % qn}), 400
-        kp = secs[si].get("kp", "")
-        body = _qcode_body("练习题", str(qn), item.get("q", ""), "",
-                           item.get("starter") or "", (n, pd.get("title", "")))
-        fname = "q%s.py" % qn
-        kind = "题%s" % qn
-    f, existed = _qcode_path(pdir, fname, kind, body, n)
-    opened = False
-    try:
-        if shutil.which("code"):
-            subprocess.Popen(["code", str(f)],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            opened = True
-    except Exception:
-        pass
-    rec = load_json(QCODE_PATH, {})
-    rec.setdefault(date_str, {})[kind] = {"file": str(f), "project": pdir.name,
-                                          "existed": existed}
-    save_json(QCODE_PATH, rec)
-    return jsonify({"ok": 1, "file": str(f), "dir": str(pdir), "project": pdir.name,
-                    "existed": existed, "vscode_opened": opened,
-                    "note": ("文件已存在，没有覆盖你的代码" if existed else "已新建题文件")})
+    """已下线：学习台不再替用户建任何题文件（用户 2026-10-07 要求自己建文件）"""
+    return jsonify({"error": "本功能已下线：学习台不再替你建文件，请自己在 VS Code 里建文件，"
+                             "再把项目文件夹放进「本地项目」根目录点【交给AI审阅】。"}), 410
 
 
 @app.route("/api/q/submit", methods=["POST"])

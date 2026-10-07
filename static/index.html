@@ -312,9 +312,9 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 
   <div class="card">
     <details class="card" id="scratchCard">
-    <summary style="cursor:pointer;font-size:15px"><b>🧪 临时试验区</b> <span class="tag">主战场在 VS Code，这里只放 5 分钟试想法</span></summary>
+    <summary style="cursor:pointer;font-size:15px"><b>🧪 临时试验区</b> <span class="tag">代码你在 VS Code 里自己写自己建文件，这里只放 5 分钟试想法</span></summary>
     <h2 style="margin-top:10px">代码练习区 <span class="tag">真实运行Python · 报错原样显示</span></h2>
-    <div class="muted" style="margin-bottom:8px"><b>正式作业请用上面每道题的【📂 在 VS Code 里开始这题】</b>——那里会在你的项目文件夹里建文件、用 VS Code 打开，AI 直接读你写的真实文件。这个框只用来临时试一下想法（比如不确定某个函数怎么写）。写完点【运行】——和课堂终端一样：程序显示"请输入…"后，直接在<b>下面的输入行</b>打字回车就能接着跑，边跑边喂不用重开。草稿按天自动保存，刷新不丢。</div>
+    <div class="muted" style="margin-bottom:8px"><b>学习台不再替你建任何文件</b>：代码你自己在 VS Code 里写、自己建文件，写完放项目文件夹进「本地项目」根目录再点【📥 交给AI审阅整个项目】。这个框只用来临时试一下想法（比如不确定某个函数怎么写）。写完点【运行】——和课堂终端一样：程序显示"请输入…"后，直接在<b>下面的输入行</b>打字回车就能接着跑，边跑边喂不用重开。草稿按天自动保存，刷新不丢。</div>
     <textarea id="codeIn" rows="13" spellcheck="false" placeholder="# 在这里写今天的作业代码"></textarea>
     <div style="margin-top:8px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
       <button class="btn good" id="runBtn">▶ 运行</button>
@@ -341,7 +341,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 
   <div class="card">
     <h2>作业提交区 <span class="tag">直通AI老师 · 深度批改</span></h2>
-    <div class="muted" style="margin-bottom:8px"><b>推荐做法</b>：在上面作业题的【📂 在 VS Code 里开始作业】写完代码，然后点【✅ 提交作业给 AI】——AI 会直接读你在 VS Code 里写的真实文件。如果你只是临时贴一段代码，用下面这个框也行。</div>
+    <div class="muted" style="margin-bottom:8px"><b>推荐做法</b>：在 VS Code 里写完代码、把项目文件夹放进「本地项目」根目录 → 点【📥 交给AI审阅整个项目】，AI 读你写的真实文件并自动勾上作业。如果你只是临时贴一段代码，用下面这个框也行。</div>
     <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn ghost" onclick="loadHwBlock()">▶ 载入练习区开写(带作业要求)</button>
       <button class="btn ghost" onclick="importHwExpect()">📤 期望效果导入练习区</button>
@@ -371,9 +371,9 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     <div id="gitAll" style="display:none;margin-top:10px"></div>
   </div>
 
-  <div class="card">
-    <h2>本地项目 · 交给AI审阅 <span class="tag">环境日起在 VS Code 里写代码</span></h2>
-    <div class="muted" style="margin-bottom:8px">你在自己电脑上（VS Code）写的项目，<b>放进下面这个根目录下的一个文件夹</b>，选它 → AI 就能审阅<b>整个文件夹</b>（文件结构 + 全部源码 + 对照当天作业要求）。零上传：学习台就跑在这台电脑上，直接读。</div>
+  <div class="card" id="workCard">
+    <h2>本地项目 · 交给AI审阅 <span class="tag">你自己建文件，AI 只读不改</span></h2>
+    <div class="muted" style="margin-bottom:8px">你在 VS Code 里写好的项目，<b>自己把文件夹放进下面这个根目录下</b>，选它 → AI 审阅<b>整个文件夹</b>（文件结构 + 全部源码 + 对照当天作业要求），只读不改、不会新建或覆盖你的任何文件。零上传：学习台就跑在这台电脑上，直接读。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <span class="muted">根目录</span>
       <input type="text" id="workRoot" style="flex:1;min-width:200px" placeholder="D:\我的作品">
@@ -579,48 +579,14 @@ async function setTrack(t){
     setTimeout(()=>location.reload(),600);
   }catch(e){toast(e.message)}
 }
-async function qStart(kn,label){
-  toast('正在你的项目文件夹里建题文件…');
-  try{
-    const r=await api('/api/q/start?date='+encodeURIComponent(dgDate())+'&q='+kn);
-    QFILES[label]=r;
-    if(r.vscode_opened)toast('已建好 <b>'+esc(r.file.split('\\').pop())+'</b> 并用 VS Code 打开');
-    else toast('已建好 <b>'+esc(r.file.split('\\').pop())+'</b>（VS Code 没自动弹出，请手动打开）<br><span class="muted">'+esc(r.dir)+'</span>');
-    const badge=$('#qfile_'+kn);
-    if(badge)badge.textContent='📂 '+r.file.split('\\').pop();
-  }catch(e){toast('失败：'+e.message)}
+function jumpWork(){
+  go('today');
+  setTimeout(()=>{
+    workLoadConfig();workFiles();
+    const el=document.getElementById('workCard');
+    if(el)el.scrollIntoView({behavior:'smooth'});
+  },140);
 }
-async function qSubmit(kn,label){
-  if(!confirm('把你在 VS Code 里写的「'+label+'」真实文件交给 AI 批改？\n（先在 VS Code 里 Ctrl+S 保存）'))return;
-  const b=document.querySelectorAll('button.btn.good');
-  toast('AI 正在读你 '+label+' 的真实文件…约 30-60 秒');
-  try{
-    const rec=QFILES[label]||{};
-    const r=await post('/api/q/submit',{date:dgDate(),q:kn,
-      file:rec.file||'',project:rec.project||''});
-    const fb=$('#workFb')||$('#subFb');
-    if(fb){fb.style.display='block';fb.innerHTML='<b>【'+esc(r.label)+' · AI 批改】</b><br>'+
-      (r.reply||'')+'<div class="muted" style="margin-top:8px">文件：'+esc(r.file)+
-      ' · 自动勾上任务：'+(r.auto_ticked&&r.auto_ticked.length?r.auto_ticked.map(i=>'任务'+(i+1)).join('、'):'（未判定到，任务需手动勾）')+
-      ' · 任务进度 '+r.tasks_done+'/'+r.task_total+'</div>';
-      fb.scrollIntoView({behavior:'smooth'});}
-    TODAY.entry=r.stats?{tasks:TODAY.entry.tasks,hw:TODAY.entry.hw}:TODAY.entry;
-    renderTaskList();updateQBadges();
-    toast('AI 批改完成（勾上 '+(r.auto_ticked?r.auto_ticked.length:0)+' 个任务）');
-  }catch(e){toast('提交失败：'+e.message)}
-}
-async function loadQFiles(){
-  try{
-    const r=await api('/api/q/files?date='+encodeURIComponent(dgDate()));
-    QFILES=r.files||{};
-    for(const k in QFILES){
-      const lbl=k;
-      const el=document.getElementById('mm_'+lbl);   // 题号位置
-      if(el)el.textContent=' 📂 '+esc(QFILES[k].file.split('\\').pop());
-    }
-  }catch(e){}
-}
-let QFILES={};
 
 function renderTaskList(){
   const t=TODAY,pd=t.plan_day;if(!pd)return;
@@ -810,10 +776,8 @@ function renderDigest(r){
         const badge=idx!=null?` <span class="tag" id="qtag_${kn}" style="cursor:pointer" onclick="jumpQ(${kn});event.preventDefault()">【任务${kn}】${esc(pd0.tasks[idx].slice(0,22))}${tDone?' <b style="color:var(--ok)">✔已完成</b>':''}</span>`:'';
         return `
         <div class="exer">
-          <details id="qdet_${kn}"><summary>题${kn}：${esc(ex.q)}${badge} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span><span id="qfile_${kn}" class="muted"></span></summary>
+          <details id="qdet_${kn}"><summary>题${kn}：${esc(ex.q)}${badge} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span></summary>
             <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn" onclick="qStart(${kn},'题${kn}')" title="在你的项目文件夹里建好这个题的文件、写入题目注释，并用 VS Code 打开">📂 在 VS Code 里开始这题</button>
-              <button class="btn good" onclick="qSubmit(${kn},'题${kn}')" title="读你 VS Code 里写的真实文件，AI 批改后自动勾上对应任务">✅ 提交这题给 AI</button>
               <button class="btn ghost" onclick="toggleAns(this)">👁 显示参考答案</button>
               <button class="btn ghost" onclick="loadStarter(${i},${j})">▶ 载入练习区开写</button>
               <button class="btn ghost" onclick="importAns(${i},${j})">📤 参考答案导入练习区</button>
@@ -829,9 +793,8 @@ function renderDigest(r){
     </div>`).join('');
   box.innerHTML=banner+(r.note?`<div class="muted" style="margin-bottom:8px">💡 ${esc(r.note)}</div>`:'')
     +(kn?`<div class="hintbox on" style="margin-bottom:8px">共 <b>${kn}</b> 道练习题(藏在各节里) · 点开题干 → 想先自己做就只看题，卡住了再点【显示参考答案】<br>
-    📂 <b>写代码请用 VS Code</b>：点每道题的【在 VS Code 里开始这题】——学习台会在 D:\我的作品\D<n>-xxx\ 里建好题文件、写入题目注释并自动打开 VS Code；写完点【提交这题给 AI】，AI 读你写的<b>真实文件</b>批改，并自动勾上对应任务。<br>
-    ☑️ <b>题和任务是绑定的</b>：题${pd0?`1~${Math.min(kn,pd0.tasks.length)}`:''}分别对应任务1~${pd0?Math.min(kn,pd0.tasks.length):0}，
-    这题写了代码就自动勾上对应任务，不用手动打钩；最下面的<b>课后作业</b>交批改＝作业完成。<br>
+    ✍️ <b>代码你自己在 VS Code 里写、自己建文件</b>——学习台不再替你建任何文件。写完把项目文件夹放进「本地项目」那个根目录（默认 D:\我的作品），点【📥 交给AI审阅整个项目】就能让 AI 读你写的<b>真实文件</b>，并自动勾上对应任务。<br>
+    ☑️ <b>题和任务是绑定的</b>：题${pd0?`1~${Math.min(kn,pd0.tasks.length)}`:''}分别对应任务1~${pd0?Math.min(kn,pd0.tasks.length):0}；
     回看：进度页日历点这一天，或大纲页点某天 →【看这天我写的代码】。</div>`:'')
     +sectionsHtml
     +hwExerciseHtml(pd0)
@@ -852,12 +815,11 @@ function hwExerciseHtml(pd){
   return `<div class="exer" id="hwExWrap">
     <details id="qdet_hw" ${done?'open':''}>
       <summary>📌 课后作业（做完这题就等于勾上"作业完成"）：${esc(pd.hw.t)}
-        <span class="tag">作业</span><span id="mm_hw">${mineGet(date,'作业')?' 💾已存':''}</span><span id="qhwbadge">${done?' <b style="color:var(--ok)">✔作业已完成</b>':''}</span><span id="qfile_hw" class="muted"></span></summary>
+        <span class="tag">作业</span><span id="mm_hw">${mineGet(date,'作业')?' 💾已存':''}</span><span id="qhwbadge">${done?' <b style="color:var(--ok)">✔作业已完成</b>':''}</span></summary>
       <div style="margin-top:6px"><b>要求：</b>${esc(pd.hw.d)}</div>
       <div class="muted" style="margin-top:4px"><b>期望：</b>${esc(pd.hw.e||'')}</div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" onclick="qStart(0,'作业')" title="在项目文件夹里建好 homework.py、写入作业要求，并用 VS Code 打开">📂 在 VS Code 里开始作业</button>
-        <button class="btn good" onclick="qSubmit(0,'作业')" title="读你在 VS Code 里写的真实文件交给 AI 批改">✅ 提交作业给 AI</button>
+        <button class="btn ghost" onclick="jumpWork()" title="学习台不替你建文件了：自己在 VS Code 里建好项目文件夹后，让 AI 读真实文件审阅">📥 我自己建好文件了，交给AI审阅</button>
         <button class="btn ghost" onclick="loadHwBlock()">▶ 载入练习区开写</button>
         <button class="btn ghost" onclick="importHwExpect()">📤 期望效果导入练习区</button>
         <button class="btn ghost" onclick="saveHwMine()">💾 存我的代码</button>
