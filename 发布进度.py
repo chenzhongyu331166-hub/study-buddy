@@ -74,11 +74,19 @@ def main():
     }
     txt = json.dumps(payload, ensure_ascii=False, indent=1)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    # 比较只看「实质进度」，忽略 updated 时间戳 —— 否则每次跑都会提交一次，
+    # 白白让 GitHub Pages 重新构建。
+    def meaningful(p):
+        return (p.get("done"), p.get("current"), p.get("total"))
+
     old = None
     if os.path.exists(OUT):
-        with open(OUT, encoding="utf-8") as fh:
-            old = fh.read()
-    if old == txt:
+        try:
+            with open(OUT, encoding="utf-8") as fh:
+                old = json.load(fh)
+        except Exception:
+            old = None
+    if old and meaningful(old) == meaningful(payload):
         print("进度没变（已经是最新的），没改动。current=D%d" % cur)
         return
     with open(OUT, "w", encoding="utf-8") as fh:
