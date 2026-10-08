@@ -87,11 +87,15 @@ def main():
           % (cur, ",".join("D%d" % x for x in done) or "（无）"))
 
     env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
+    # pythonw/双击运行时没有控制台，git 是控制台程序 → 必须 CREATE_NO_WINDOW，
+    # 否则会闪一个黑色命令行窗口（标题是 git.exe 路径，看着像"C盘cmd/Git"）。
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     try:
         for cmd in (["git", "add", "docs/progress.json"],
                     ["git", "commit", "-m", "publish progress: current D%d" % cur],
                     ["git", "push", "origin", "HEAD"]):
             r = subprocess.run(cmd, cwd=ROOT, env=env, timeout=90,
+                               creationflags=flags,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if r.returncode != 0:
                 if cmd[1] == "commit":

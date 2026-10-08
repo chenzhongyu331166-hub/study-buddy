@@ -317,66 +317,11 @@ def api_today():
         resp["tomorrow_fetched"] = tm_date in st.get("fetch", {})
         resp["tomorrow_digest"] = _digest_path(tm_date).exists()
     save_state(st)  # 初始化今天的空条目
-    if n:                      # 把真实学习日号发布到公网静态页
-        try:
-            publish_today(n + 1, now)
-        except Exception:
-            pass
     return jsonify(resp)
 
 
-# ---------- 把「今天学的是 Dn」发布到 GitHub Pages ----------
-# 静态页(https://...github.io/study-buddy/)按日历算会错位，因为学习台是
-# 「缺勤自动顺延」的。这里把真实的学习日号写成 docs/today.json 并推送，
-# 静态页启动时读它自动跟随；推不动就退回手动钉住。
-PAGES_JSON = ROOT / "docs" / "today.json"
-_PUB_LOCK = threading.Lock()
-_PUB_LAST = [0.0]
-
-
-def publish_today(day_no, date_str):
-    """best-effort：写 docs/today.json 并尝试 commit+push。失败静默，不影响学习台。"""
-    payload = {"day": day_no, "date": date_str,
-               "total": len(DAYS),
-               "updated": datetime.datetime.now().isoformat(timespec="seconds")}
-    txt = json.dumps(payload, ensure_ascii=False, indent=1)
-    with _PUB_LOCK:
-        try:
-            if PAGES_JSON.exists() and PAGES_JSON.read_text(encoding="utf-8") == txt:
-                return False
-        except Exception:
-            pass
-        # 5 分钟内不重复推
-        if time.time() - _PUB_LAST[0] < 300:
-            try:
-                PAGES_JSON.parent.mkdir(parents=True, exist_ok=True)
-                PAGES_JSON.write_text(txt, encoding="utf-8")
-            except Exception:
-                pass
-            return False
-        try:
-            PAGES_JSON.parent.mkdir(parents=True, exist_ok=True)
-            PAGES_JSON.write_text(txt, encoding="utf-8")
-        except Exception:
-            return False
-
-    def _push():
-        env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
-        for cmd in (["git", "add", "docs/today.json"],
-                    ["git", "-c", "core.quotepath=false", "commit", "-m",
-                     "publish today.json Dn%s" % day_no],
-                    ["git", "push", "origin", "HEAD"]):
-            try:
-                r = subprocess.run(cmd, cwd=str(ROOT), env=env, timeout=90,
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                if r.returncode != 0 and cmd[0] == "git" and cmd[1] == "commit":
-                    return          # 没有改动就算了
-            except Exception:
-                return
-        _PUB_LAST[0] = time.time()
-
-    threading.Thread(target=_push, daemon=True).start()
-    return True
+# 日幦发布：用「发布进度.py / 发布进度.bat」双击即可。
+# 不在服务器里跑 git：pythonw 没控制台，被拉起来会闪黑屏。
 
 
 # ---------- 打卡 ----------
