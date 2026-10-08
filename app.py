@@ -1232,8 +1232,12 @@ DEFAULT_WORK_ROOT = r"D:\我的作品"
 REVIEW_PATH = ROOT / "data" / "reviews.json"
 WORK_EXTS = {".py", ".md", ".txt", ".json", ".csv", ".toml", ".cfg", ".ini", ".yaml", ".yml"}
 WORK_SKIP = {".git", "__pycache__", "venv", ".venv", "env", "node_modules", ".idea", ".vscode"}
+# 数据目录：审阅代码时不该把 CSV/数据喂给 AI（动辄几 MB，会把 6 万字符额度
+# 吃光，而且对「审代码」毫无帮助）。这些目录里的文件会被列出来让你知道它们存在。
+DATA_DIRS = {"data", "dataset", "datasets", "raw", "assets"}
 MAX_FILES = 30
 MAX_TOTAL = 60000
+MAX_FILE_BYTES = 200_000        # 单文件超过 200KB 视为数据文件，跳过
 
 
 def work_root():
@@ -1271,13 +1275,27 @@ def api_work_config():
 
 
 def _collect_project(pdir):
-    out, total = [], 0
+    """返回 (可审阅文件列表, 字符总数, 被跳过的数据文件列表)。
+
+    大文件 / data 目录一律跳过：CSV 动辄几 MB，塞进 AI 上下文会把额度
+    吃光，而且对「审代码」毫无帮助。
+    """
+    out, total, skipped = [], 0, []
     for f in sorted(pdir.rglob('*')):
         if len(out) >= MAX_FILES or total >= MAX_TOTAL:
             break
         if not f.is_file() or f.suffix.lower() not in WORK_EXTS:
             continue
+        rel = str(f.relative_to(pdir)).replace('\\', '/')
         if any(part in WORK_SKIP for part in f.parts):
+            continue
+        try:
+            size = f.stat().st_size
+        except Exception:
+            continue
+        in_data_dir = any(part in DATA_DIRS for part in f.relative_to(pdir).parts[:-1])
+        if size > MAX_FILE_BYTES or in_data_dir:     # 数据文件，不进 AI 上下文
+            skipped.append({"path": rel, "size": size})
             continue
         try:
             txt = f.read_text(encoding='utf-8', errors='replace')
@@ -1285,9 +1303,9 @@ def _collect_project(pdir):
             continue
         if len(txt) > 20000:
             txt = txt[:20000] + "\n... (超长，已截断)"
-        out.append({"path": str(f.relative_to(pdir)).replace('\\', '/'), "size": len(txt)})
+        out.append({"path": rel, "size": len(txt)})
         total += len(txt)
-    return out, total
+    return out, total, skipped
 
 
 def _project_dir(name):
@@ -1304,8 +1322,9 @@ def api_work_files():
     pdir = _project_dir(name)
     if pdir is None:
         return jsonify({"error": "项目不存在，或路径不在工作根目录内"}), 400
-    files, total = _collect_project(pdir)
-    return jsonify({"project": name, "dir": str(pdir), "files": files, "total": total})
+    files, total, skipped = _collect_project(pdir)
+    return jsonify({"project": name, "dir": str(pdir), "files": files,
+                    "total": total, "skipped": skipped})
 
 
 @app.route("/api/work/review", methods=["POST"])
@@ -1315,9 +1334,10 @@ def api_work_review():
     pdir = _project_dir(name)
     if pdir is None:
         return jsonify({"error": "项目不存在，或路径不在工作根目录内"}), 400
-    files, total = _collect_project(pdir)
+    files, total, skipped = _collect_project(pdir)
     if not files:
-        return jsonify({"error": "这个项目里没有可审阅的文本文件(.py/.md/.json 等)"}), 400
+        return jsonify({"error": "这个项目里没有可审阅的文本文件(.py/.md/.json 等)"
+                                "（CSV 等数据文件会被跳过，正常）"}), 400
     try:
         n = int(body.get("day") or 0)
     except Exception:
@@ -1334,6 +1354,9 @@ def api_work_review():
         txt = (pdir / f['path']).read_text(encoding='utf-8', errors='replace')
         parts.append("===== %s =====\n%s" % (f['path'], txt))
     tree = "\n".join("- " + f['path'] for f in files)
+    skipnote = ("\n（以下数据文件太大，未纳入审阅，你不需要看它们）：\n"
+                + "\n".join("- %s（%.1f MB）" % (s['path'], s['size'] / 1048576.0)
+                            for s in skipped) + "\n") if skipped else ""
     system = ("你是学习台的代码审阅老师。用户在自己的电脑上用真实编辑器写了项目，"
               "现在把整个项目文件夹交给你审阅。\n"
               "输出中文，用 Markdown，分这几块：\n"
@@ -1344,10 +1367,10 @@ def api_work_review():
               "5) **下一步**：给他一到两个最值得先改的点。\n"
               "要求：只依据给出的文件内容判断，不要编造没写的功能；"
               "指出问题时给出可直接照抄的修正代码片段。")
-    user = ("项目目录结构：\n%s\n\n%s%s当天任务：\n%s\n\n"
+    user = ("项目目录结构：\n%s\n\n%s%s当天任务：\n%s\n\n%s\n"
             "以下是这个项目的全部文件内容：\n\n%s"
             % (tree, hwline, ("当天任务：\n%s\n\n" % tasks) if tasks else "", tasks,
-               "\n\n".join(parts)))
+               skipnote, "\n\n".join(parts)))
     try:
         reply, usage = ai_chat([{"role": "user", "content": user}],
                                system=system, temperature=0.3, max_tokens=4000)
@@ -1363,7 +1386,7 @@ def api_work_review():
         rv[name] = rv[name][-20:]
         save_json(REVIEW_PATH, rv)
     return jsonify({"project": name, "dir": str(pdir), "files": files,
-                    "total": total, "reply": reply,
+                    "total": total, "skipped": skipped, "reply": reply,
                     "model": current_model()})
 
 

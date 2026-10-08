@@ -1368,10 +1368,13 @@ function workFiles(){
   const p=$('#workProj').value;
   if(!p){toast('先在上面选一个项目文件夹');return}
   api('/api/work/files?project='+encodeURIComponent(p)).then(r=>{
-    const fs=r.files||[];
+    const fs=r.files||[], sk=r.skipped||[];
     $('#workFiles').innerHTML=`<div class="muted">目录 <code>${esc(r.dir)}</code> · ${fs.length} 个可审阅文件 · 共 ${r.total} 字符</div>`
-      +'<div class="cblk">'+fs.map(f=>esc(f.path)+'  ('+f.size+' 字符)').join('\n')+'</div>';
-    toast('找到 '+fs.length+' 个文件');
+      +(fs.length?'<div class="cblk">'+fs.map(f=>esc(f.path)+'  ('+f.size+' 字符)').join('\n')+'</div>'
+               :'<div class="muted">这个文件夹里暂时没有 .py/.md/.json 这类可审阅的文件</div>')
+      +(sk.length?'<div class="muted" style="margin-top:8px">数据文件（不会喂给 AI，你自己用）：</div><div class="cblk">'
+               +sk.map(f=>esc(f.path)+'  ('+(f.size/1048576).toFixed(1)+' MB)').join('\n')+'</div>':'');
+    toast('找到 '+fs.length+' 个文件'+(sk.length?'，跳过 '+sk.length+' 个数据文件':''));
   }).catch(e=>toast(e.message));
 }
 async function workReview(){
@@ -1383,7 +1386,9 @@ async function workReview(){
     const r=await post('/api/work/review',{project:p,day:(TODAY&&TODAY.day)||0});
     fb.innerHTML=r.reply;
     fb.scrollIntoView({behavior:'smooth'});
-    $('#workMsg').innerHTML=`审阅完成：${esc(r.project)} · ${r.files.length} 个文件 / ${r.total} 字符 · 模型 ${esc(r.model||'')}`;
+    const sk=(r.skipped||[]);
+    $('#workMsg').innerHTML=`审阅完成：${esc(r.project)} · ${r.files.length} 个文件 / ${r.total} 字符 · 模型 ${esc(r.model||'')}`
+      +(sk.length?`<br><span class="muted">已跳过数据文件 ${sk.length} 个：${sk.map(f=>esc(f.path)).join('、')}</span>`:'');
   }catch(e){fb.textContent='⚠ '+e.message}
 }
 
