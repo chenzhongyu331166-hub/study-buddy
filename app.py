@@ -1493,9 +1493,11 @@ def api_digest_generate():
     net_err = 0
     for attempt, temp in enumerate((0.3, 0.2, 0.25, 0.15, 0.2)):
         try:
+            # 注意：不要开 thinking——长正文+长 prompt 下推理会吃光 token，content 为空，
+            # 实测 thinking=True 连续 5 次都没有 JSON；thinking=False 15 秒正常出 JSON。
             reply, _u = ai_chat([{"role": "user", "content": user}],
                                 system=system, temperature=temp,
-                                max_tokens=5000, thinking=True)
+                                max_tokens=6000, thinking=False)
             data = _extract_json(reply)
             if not isinstance(data.get("sections"), list) or not data["sections"]:
                 raise ValueError("sections为空")
