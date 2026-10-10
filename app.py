@@ -416,6 +416,13 @@ import requests as req
 
 _AI_CACHE = {}   # base, key, ids, cfg_model, ts —— key只在内存，绝不写入state/GitHub
 
+# 学习台 AI 通道：默认跟 opencode.jsonc；可用这个文件单独覆盖（不改 opencode 本身）
+#   例如 {"provider":"glm","model":"glm-4-flash"}
+AI_CFG = ROOT / "data" / "ai_config.json"
+# 主通道整段挂掉（如魔搭免费额度 500 billing service unavailable）时自动兜底的免费通道
+AI_FALLBACK = [("glm", "glm-4-flash"),
+               ("modelscope", "Qwen/Qwen3.5-397B-A17B")]
+
 # 老师的长期记忆：对话历史 + 学生画像(data/ 目录，不入Git)
 CHAT_PATH = ROOT / "data" / "chat.json"
 PROFILE_PATH = ROOT / "data" / "profile.json"
@@ -487,33 +494,66 @@ AI_PREFER = ["Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3.5-122B-A10B",
              "deepseek-ai/DeepSeek-V4-Pro", "MiniMax/MiniMax-M1-80k"]
 
 
+def _endpoint(providers, pname, model):
+    """从 opencode.jsonc 的 provider 段拼出一个可用通道（base/key/model）。"""
+    prov = (providers or {}).get(pname) or {}
+    opts = prov.get("options") or {}
+    base = (opts.get("baseURL") or "").rstrip("/")
+    key = opts.get("apiKey") or ""
+    if not base or not key:
+        return None
+    return {"name": pname, "base": base, "key": key, "model": model}
+
+
 def ai_meta():
-    """读opencode.jsonc并向魔搭拉可用模型列表(/models)，10分钟缓存。"""
+    """决定学习台用哪个通道，10分钟缓存。
+
+    默认按 opencode.jsonc 的 model 前缀（如 modelscope/...）走；
+    也可以用 data/ai_config.json 单独指定学习台的通道，例如
+        {"provider":"glm","model":"glm-4-flash"}
+    这样不影响 opencode 自己的默认模型。魔搭免费额度会抽风时靠这个切换。
+    """
     now = time.time()
     if _AI_CACHE and now - _AI_CACHE.get("ts", 0) < 600:
         return _AI_CACHE
     raw = OPencode_CFG.read_text(encoding="utf-8-sig")
     raw = "\n".join(l for l in raw.splitlines() if not l.strip().startswith("//"))
     cfg = json.loads(raw)
-    opts = cfg["provider"]["modelscope"]["options"]
+    providers = cfg.get("provider") or {}
+    sb = load_json(AI_CFG, {}) or {}
     model_full = cfg.get("model", "")
-    cfg_model = model_full.split("/", 1)[1] if model_full.startswith("modelscope/") else model_full
-    base = opts["baseURL"].rstrip("/")
-    key = opts["apiKey"]
+    pname = (sb.get("provider") or "").strip()
+    if not pname:
+        pname = model_full.split("/", 1)[0] if "/" in model_full else "modelscope"
+    cfg_model = (sb.get("model") or "").strip()
+    if not cfg_model:
+        cfg_model = (model_full.split("/", 1)[1]
+                     if model_full.startswith(pname + "/") else model_full)
+    ep = _endpoint(providers, pname, cfg_model) or {"base": "", "key": "", "model": cfg_model}
+    base, key = ep["base"], ep["key"]
     ids = []
-    try:
-        r = req.get(base + "/models", headers={"Authorization": "Bearer " + key}, timeout=20)
-        ids = [m.get("id") for m in r.json().get("data", []) if m.get("id")]
-    except Exception:
-        pass
-    _AI_CACHE.update(base=base, key=key, ids=ids, cfg_model=cfg_model, ts=now)
+    if base and key:
+        try:
+            r = req.get(base + "/models",
+                        headers={"Authorization": "Bearer " + key}, timeout=20)
+            ids = [m.get("id") for m in r.json().get("data", []) if m.get("id")]
+        except Exception:
+            pass
+    _AI_CACHE.update(base=base, key=key, ids=ids, cfg_model=cfg_model,
+                     provider=pname, providers=providers, ts=now)
     return _AI_CACHE
 
 
 def current_model():
-    """当前模型：用户下拉选过的 > 配置默认(在线时) > 偏好回退 > 列表第一个"""
+    """当前模型：ai_config.json 指定 > 用户下拉选过的 > 配置默认(在线时) > 偏好回退"""
     m = ai_meta()
     ids = m["ids"]
+    # 学习台自己的配置里写死了模型（如 glm-4-flash）就无条件用它：
+    # 不能让它被 /models 列表的第一个带偏（glm 的 ids[0] 是 glm-4.5 这种推理模型，
+    # 不解析 reasoning 会返回空内容）。
+    sb_model = ((load_json(AI_CFG, {}) or {}).get("model") or "").strip()
+    if sb_model:
+        return sb_model
     saved = None
     try:
         with _LOCK:
@@ -529,35 +569,48 @@ def current_model():
 
 
 def ai_chat(messages, system=None, temperature=0.7, max_tokens=2048, thinking=False):
-    cfg = ai_meta()
-    model = current_model()
+    m = ai_meta()
+    providers = m.get("providers") or {}
+    # 候选通道：当前通道 + 免费兜底（魔搭免费额度会整段返回 500
+    # "billing service unavailable"，那时自动换到别的免费通道）
+    cands = [{"name": m.get("provider") or "modelscope",
+              "base": m["base"], "key": m["key"], "model": current_model()}]
+    for pname, pmodel in AI_FALLBACK:
+        if pname == cands[0]["name"]:
+            continue
+        ep = _endpoint(providers, pname, pmodel)
+        if ep:
+            cands.append(ep)
     msgs = []
     if system:
         msgs.append({"role": "system", "content": system})
     msgs.extend(messages)
-    payload = {"model": model, "messages": msgs,
-               "temperature": temperature, "max_tokens": max_tokens,
-               "enable_thinking": bool(thinking)}
-    # 魔搭偶发 SSL EOF / 连接重置(10054)，一次失败就报错太脆弱：退避重试 3 次
     last = None
-    for i, wait in enumerate((0, 1.5, 4)):
-        if wait:
-            time.sleep(wait)
-        try:
-            r = req.post(cfg["base"] + "/chat/completions",
-                         json=payload,
-                         headers={"Authorization": "Bearer " + cfg["key"],
-                                  "Content-Type": "application/json"},
-                         timeout=180)
-            if r.status_code != 200:
-                last = RuntimeError("AI接口 %s: %s" % (r.status_code, r.text[:300]))
+    for ep in cands:
+        payload = {"model": ep["model"], "messages": msgs,
+                   "temperature": temperature, "max_tokens": max_tokens}
+        if ep["name"] == "modelscope":     # 只有魔搭认这个字段
+            payload["enable_thinking"] = bool(thinking)
+        # 偶发 SSL EOF / 连接重置(10054)，一次失败就报错太脆弱：退避重试 3 次
+        for wait in (0, 1.5, 4):
+            if wait:
+                time.sleep(wait)
+            try:
+                r = req.post(ep["base"] + "/chat/completions",
+                             json=payload,
+                             headers={"Authorization": "Bearer " + ep["key"],
+                                      "Content-Type": "application/json"},
+                             timeout=180)
+                if r.status_code != 200:
+                    last = RuntimeError("AI接口 %s: %s" % (r.status_code, r.text[:300]))
+                    continue
+                data = r.json()
+                content = data["choices"][0]["message"]["content"]
+                return content, data.get("usage", {})
+            except Exception as e:
+                last = e
                 continue
-            data = r.json()
-            content = data["choices"][0]["message"]["content"]
-            return content, data.get("usage", {})
-        except Exception as e:
-            last = e
-            continue
+        # 这个通道 3 次都失败 -> 换下一个兜底通道
     raise last if last else RuntimeError("AI 调用失败")
 
 
