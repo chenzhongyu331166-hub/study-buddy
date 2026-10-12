@@ -393,11 +393,11 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 </section>
 
 <section class="page" id="p-outline">
-  <div class="card"><h2>84天大纲 · 12阶段</h2><div class="muted">点阶段展开，点某天查看详情(所有资源均为实测可访问的教材章节)</div></div>
+  <div class="card"><h2><span id="planLen1">27 天</span>大纲 · <span id="stageCnt">6</span> 阶段</h2><div class="muted">点阶段展开，点某天查看详情(所有资源均为实测可访问的教材章节)</div></div>
   <div id="stageList"></div>
   <div class="card" id="detail"><h2>天详情</h2><div class="muted">点上面任意一天</div></div>
   <div class="card">
-    <h2>番外 · 多语言速览 <span class="tag">看懂就行 · 不占84天</span></h2>
+    <h2>番外 · 多语言速览 <span class="tag">看懂就行 · 不算进计划进度</span></h2>
     <div class="muted" style="margin-bottom:8px">主语言是Python(SQL和C在正课里)。这里给你其他常见语言的"认脸"对照：能读懂别人代码即可，不用会写。看完想深入哪个再说。</div>
     <div id="polyList" class="loading">加载中...</div>
   </div>
@@ -406,7 +406,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 <section class="page" id="p-progress">
   <div class="card"><h2>总览</h2><div class="stats" id="statBox"></div></div>
   <div class="card"><h2>阶段完成度</h2><div id="stageBars"></div></div>
-  <div class="muted" style="margin-bottom:8px">灰=未开始 / 蓝=任务部分完成 / 绿=任务全完成 / <b style="color:var(--hwglow)">金色光边=已交作业(更亮)</b> · <b>点任意日期 → 下方直接回看这天你写的代码(练习草稿/每题存档/作业提交)</b></div>
+  <div class="muted" style="margin-bottom:8px">灰=未开始 / 蓝=任务部分完成 / 绿=任务全完成 / <b style="color:var(--hwglow)">金色光边=已交作业(更亮)</b> · <b>格子上的数字就是第几期(Dn)，点它回看这期你写的代码</b></div>
   <div class="cal" id="calBox"></div>
   <div class="calCode" id="calCode" style="display:none"></div>
   <div class="card" style="margin-top:8px;border:1px dashed var(--line);padding:10px">
@@ -510,8 +510,10 @@ function stageOf(d){return PLAN.stages.find(s=>{const[a,b]=s.range.slice(1).spli
 function renderToday(){
   const t=TODAY, pd=t.plan_day, st=stageOf(t.day);
   if(t.track)trackNow=t.track;
-  $('#hdSub').textContent=`D${t.day}/84 · ${t.date} · 连续${t.stats.streak}天 · 总进度${t.stats.percent}%`;
-  $('#todayHead').innerHTML=`<h2>D${t.day} ${pd?pd.title:'计划外日期(不在84天内)'}</h2>
+  const _tot=PLAN.meta.total_days||PLAN.days.length;
+  // Dn 才是「第几期」，跟日历日期无关（缺勤顺延），所以这里不显示计划日期
+  $('#hdSub').textContent=`D${t.day}/${_tot} · 连续${t.stats.streak}天 · 总进度${t.stats.percent}%`;
+  $('#todayHead').innerHTML=`<h2>D${t.day} ${pd?pd.title:'计划外的天'}</h2>
     <div>${pd?`<span class="tag">${st?st.range+' '+st.name:''}</span><span class="tag">阶段目标：${st?st.goal:''}</span>`:''}</div>
     <div class="muted" style="margin-top:6px">完成任务打勾即可关掉右下角提醒；作业完成也打勾。</div>`;
   if(!pd){$('#taskList').innerHTML='<div class="muted">今天不在计划里，休息或补进度。</div>';
@@ -970,18 +972,19 @@ function updateDayBar(){
   let i=PLAN.days.findIndex(d=>d.date===viewDate);
   if(i<0){viewDate=defaultDateStr();i=PLAN.days.findIndex(d=>d.date===viewDate)}
   const d=PLAN.days[i];
-  $('#dNow').textContent=`D${d.day}《${d.title}》 · ${d.date}`;
+  $('#dNow').textContent=`D${d.day}《${d.title}》`;
   $('#dPrev').disabled=i<=0;$('#dNext').disabled=i>=PLAN.days.length-1;
   const def=defaultDateStr();$('#dToday').disabled=(viewDate===def);
   let b=PLAN.days.findIndex(x=>x.date===def);if(b<0)b=i;
   const off=i-b;
+  const todayStr=ymd((()=>{const c=new Date();if(c.getHours()<7)c.setDate(c.getDate()-1);return c})());
   let hint;
-  if(off>0)hint=`提前${off}天开写：任务/批改/打卡/汇总全记 D${d.day}`;
-  else if(off<0)hint=`拖后${-off}天补写：任务/批改/打卡/汇总全记 D${d.day}`;
+  if(off>0)hint=`提前${off}期开写：任务/批改/打卡/汇总全记 D${d.day}`;
+  else if(off<0)hint=`拖后${-off}期补写：任务/批改/打卡/汇总全记 D${d.day}`;
   else{
     const c=new Date();if(c.getHours()<7)c.setDate(c.getDate()-1);
-    hint=def<ymd(c)?`缺勤顺延 · 今天仍学 D${d.day}，缺的那天自动往后压不跳天`
-      :'默认学习日 · 早上7点前仍算前一天';
+    hint=(def<todayStr?`缺勤顺延 · 今天仍学 D${d.day}（那一天没做就往后压，不跳天）`
+      :'默认学习日（早上7点前仍算前一天）')+`　·　电脑今天 ${todayStr}`;
   }
   $('#dHint').textContent=hint;
   const tag=$('#subDayTag');if(tag)tag.textContent=`D${d.day}《${d.title}》`;
@@ -1061,6 +1064,9 @@ $('#subMark').onclick=async()=>{
 
 // ---------- 大纲 ----------
 function renderOutline(){
+  const _p1=$('#planLen1'),_sc=$('#stageCnt');
+  if(_p1)_p1.textContent=(PLAN.meta.total_days||PLAN.days.length)+' 天';
+  if(_sc)_sc.textContent=(PLAN.stages||[]).length;
   $('#stageList').innerHTML=PLAN.stages.map(s=>`
     <div class="stage"><div class="hd" data-s="${s.stage}">
       <b>阶段${s.stage} ${s.name}</b><span class="muted">${s.range} · ${s.goal}</span></div>
@@ -1070,9 +1076,9 @@ function renderOutline(){
     if(box.style.display==='none'){
       const s=PLAN.stages.find(x=>x.stage==h.dataset.s);
       const[a,b]=s.range.slice(1).split('-').map(Number);
-      box.innerHTML='';for(let n=a;n<=b;n++){const d=PLAN.days[n-1];
+      box.innerHTML='';for(let n=a;n<=Math.min(b,PLAN.days.length);n++){const d=PLAN.days[n-1];if(!d)continue;
         box.insertAdjacentHTML('beforeend',`<div class="dayrow" data-d="${n}">
-          <span class="no">D${n}</span><span class="dt">${d.date}</span>
+          <span class="no">D${n}</span>
           <span class="st3 muted" id="dr${n}"></span><span>${d.title}</span></div>`)}
       $$('#stg'+h.dataset.s+' .dayrow').forEach(r=>r.onclick=()=>showDay(+r.dataset.d));
       box.style.display='block';markDays();
@@ -1096,16 +1102,17 @@ async function loadPoly(){
 }
 async function markDays(){
   try{if(!_stateCache)_stateCache=(await api('/api/state')).state;
-    for(let n=1;n<=84;n++){const d=PLAN.days[n-1],e=_stateCache.checkins[d.date]||{tasks:[]};
+    for(let n=1;n<=PLAN.days.length;n++){const d=PLAN.days[n-1];if(!d)continue;
+      const e=_stateCache.checkins[d.date]||{tasks:[]};
       const done=(e.tasks||[]).filter(Boolean).length;
-      const el=$('#dr'+n);if(el)el.textContent=((done?'任务'+done+'/3':'')+(e.hw?' +作业':'')).trim();
+      const el=$('#dr'+n);if(el)el.textContent=((done?'任务'+done+'/'+(d.tasks||[]).length:'')+(e.hw?' +作业':'')).trim();
     }
   }catch(e){}
 }
 function showDay(n){
   const d=PLAN.days[n-1];
   $('#detail').innerHTML=`<h2>D${n} ${d.title}</h2>
-    <div class="muted">${d.date} · 阶段${d.stage}</div>
+    <div class="muted">阶段${d.stage}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
       <button class="btn" onclick="showDayCode(${n})">💾 看这天我写的代码（每题存档/作业各版批改）</button>
     </div>
@@ -1423,10 +1430,12 @@ async function renderProgress(){
     <div><span class="muted">阶段${s2.stage} ${s2.name}(${s2.range}) ${st.stage_pct[s2.stage]||0}%</span>
     <div class="bar"><i style="width:${st.stage_pct[s2.stage]||0}%"></i></div></div>`).join('');
   let html='';
-  for(let n=1;n<=84;n++){const d=PLAN.days[n-1],e=s.state.checkins[d.date]||{tasks:[],hw:false};
-    const done=(e.tasks||[]).filter(Boolean).length;
-    const cls=(done===3?'full':(done>0?'partial':''))+(e.hw?' hw':'');
-    html+=`<div class="d ${cls}" title="D${n} ${d.title} 任务${done}/3${e.hw?' ✔已交作业':''} · 点击看这天写的代码" onclick="calDay(${n})">${n}</div>`}
+  const _tot=PLAN.meta.total_days||PLAN.days.length;
+  for(let n=1;n<=PLAN.days.length;n++){const d=PLAN.days[n-1];if(!d)continue;
+    const e=s.state.checkins[d.date]||{tasks:[],hw:false};
+    const nt=(d.tasks||[]).length, done=(e.tasks||[]).filter(Boolean).length;
+    const cls=(nt&&done>=nt?'full':(done>0?'partial':''))+(e.hw?' hw':'');
+    html+=`<div class="d ${cls}" title="D${n} ${d.title} 任务${done}/${nt}${e.hw?' ✔已交作业':''} · 点击看这天写的代码" onclick="calDay(${n})">${n}</div>`}
   $('#calBox').innerHTML=html;
   const tIdx=PLAN.days.findIndex(d=>d.date===TODAY.date);
   if(tIdx>=0)$$('#calBox .d')[tIdx].classList.add('today');
