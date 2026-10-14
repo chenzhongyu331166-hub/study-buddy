@@ -43,15 +43,13 @@ def build():
                    .replace("__START__", start_date()) \
                    .replace("__MAXDAY__", str(len(days)))
     OUT.write_text(html, encoding="utf-8")
-    # GitHub Pages 只接受 / 或 /docs 作为发布目录，这里同步一份到 docs/demo.html
-    docs = ROOT / "docs"
-    docs.mkdir(exist_ok=True)
-    (docs / "demo.html").write_text(html, encoding="utf-8")
-    nj = docs / ".nojekyll"
+    # 说明：公网只发布 docs/（着陆页 index.html + app.html 完整界面）。
+    # 本页仅本机/隧道使用，不再单独发布，避免评委迷路。
+    nj = ROOT / "docs" / ".nojekyll"
     if not nj.exists():
+        nj.parent.mkdir(exist_ok=True)
         nj.write_text("", encoding="utf-8")
-    print("wrote %s + docs/demo.html (%d days, %.1f KB)"
-          % (OUT, len(days), len(html) / 1024))
+    print("wrote %s (%d days, %.1f KB)" % (OUT, len(days), len(html) / 1024))
 
 
 TEMPLATE = r"""<!DOCTYPE html>

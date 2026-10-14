@@ -15,7 +15,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "static" / "index.html"
 SNAP = ROOT / "pages" / "demo-snapshot.json"
-TMP_CAPTURE = Path(r"C:\Users\ADMINI~1\AppData\Local\Temp\opencode\demo-data.json")
+TMP_CAPTURE = Path(os.environ.get(
+    "STBUDDY_DEMO_CAPTURE",
+    os.path.join(os.environ.get("TEMP", "."), "opencode", "demo-data.json")))
 OUT = ROOT / "docs" / "app.html"
 
 

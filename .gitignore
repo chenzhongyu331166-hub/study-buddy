@@ -10,3 +10,6 @@ resources/
 *.bak-*
 *.corrupt-*
 plan.backup_*.json
+
+# 本机/网络环境脚本（不入库，保留本地）
+fix_github_ip.ps1
