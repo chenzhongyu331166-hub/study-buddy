@@ -1,6 +1,6 @@
-# study-buddy one-click launcher: start server if down, then open browser
+# 学伴 StudyBuddy one-click launcher: start server if down, then open browser
+$root = $PSScriptRoot
 $url = 'http://127.0.0.1:5000'
-$root = 'D:\VibeBuddy\study-buddy'
 $up = $false
 try { Invoke-WebRequest $url -UseBasicParsing -TimeoutSec 2 | Out-Null; $up = $true } catch {}
 

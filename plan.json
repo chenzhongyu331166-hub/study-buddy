@@ -867,39 +867,39 @@
   "stages": [
     {
       "stage": 1,
-      "name": "阶段1",
+      "name": "Python 基础入门",
       "range": "D1-7",
-      "goal": ""
+      "goal": "掌握变量/分支/循环/常用数据结构与函数，能独立写小程序"
     },
     {
       "stage": 2,
-      "name": "阶段2",
+      "name": "开发环境与工程习惯",
       "range": "D8-11",
-      "goal": ""
+      "goal": "装好 VS Code、用 Git 管理代码、发布到 GitHub"
     },
     {
       "stage": 3,
-      "name": "阶段3",
+      "name": "数据分析入门",
       "range": "D12-13",
-      "goal": ""
+      "goal": "用 pandas 读取、清洗数据并出图"
     },
     {
       "stage": 4,
-      "name": "阶段4",
+      "name": "数据库与 SQL",
       "range": "D14-16",
-      "goal": ""
+      "goal": "建表增删改查、JOIN、聚合查询"
     },
     {
       "stage": 5,
-      "name": "阶段5",
+      "name": "Web 后端与接口",
       "range": "D17-20",
-      "goal": ""
+      "goal": "用 Flask + SQLite 写 REST API 并接前端"
     },
     {
       "stage": 6,
-      "name": "阶段6",
+      "name": "产品思维与项目收尾",
       "range": "D21-27",
-      "goal": ""
+      "goal": "需求/指标/PRD/用户研究，完成并总结个人项目"
     }
   ],
   "tracks": {

@@ -97,7 +97,7 @@ for _d in PLAN["days"]:
 
 
 def day_index(date_str):
-    """日期 -> 第几天(1..84)，不在范围内返回 None"""
+    """日期 -> 第几天(1..TOTAL)，不在范围内返回 None"""
     try:
         d = datetime.date.fromisoformat(date_str)
     except Exception:
@@ -131,7 +131,7 @@ def day_entry(st, date_str):
 def first_undone_day(st):
     """当前该学第几天：第一个任务没全勾的计划日。
     缺勤规则(2026.9.29)：哪天没打卡，那天的课自动往后压——次日打开仍是它，
-    不跳到下一天；补完才推进。84天任务全完成返回 None。"""
+    不跳到下一天；补完才推进。全部计划日任务完成则返回 None。"""
     for n in range(1, TOTAL + 1):
         e = st["checkins"].get(DAYS[n]["date"], {})
         if not e or not all(e.get("tasks", [])):
@@ -166,7 +166,7 @@ def compute_stats(st):
 
     # 连续天数(按学习日序，2026.9.29改)：从D1起连续完成的天数。
     # 缺勤不断签——顺延机制把缺的天往后压，补上即续(自然日口径已废弃：
-    # 假期/缺勤会让旧口径永久清零)。全完成=84。
+    # 假期/缺勤会让旧口径永久清零)。全完成=TOTAL。
     fu = first_undone_day(st)
     streak = (fu - 1) if fu else TOTAL
 
@@ -223,7 +223,7 @@ ACHIEVEMENTS = [
     {"id": "scout", "name": "明日侦察兵", "desc": "首次抓取明天的学习资源", "cond": lambda s, st: s["fetched_days"] >= 1},
     {"id": "stage2", "name": "阶段通关", "desc": "第一个阶段(7天)任务全清", "cond": lambda s, st: s["stage_pct"].get(1) == 100},
     {"id": "half_stage", "name": "六阶段毕业", "desc": "前6个阶段全部100%", "cond": lambda s, st: all(s["stage_pct"].get(i) == 100 for i in range(1, 7))},
-    {"id": "graduate", "name": "84天毕业", "desc": "完成D84毕业日", "cond": lambda s, st: _day_full(st, TOTAL)},
+    {"id": "graduate", "name": "全勤毕业", "desc": "完成最后一天(毕业日)", "cond": lambda s, st: _day_full(st, TOTAL)},
     {"id": "run_first", "name": "初次运行", "desc": "第一次点运行跑通代码", "cond": lambda s, st: s["runs"] >= 1},
     {"id": "run20", "name": "跑它二十遍", "desc": "累计运行代码20次", "cond": lambda s, st: s["runs"] >= 20},
     {"id": "run100", "name": "百次试炼", "desc": "累计运行代码100次", "cond": lambda s, st: s["runs"] >= 100},
@@ -282,7 +282,7 @@ def api_today():
     arg = (request.args.get("date") or "").strip()
     if arg:
         if day_index(arg) is None:
-            return jsonify({"error": "日期不在84天计划内"}), 400
+            return jsonify({"error": "日期不在计划内"}), 400
         now = arg
     else:
         now = default_study_date(st)
@@ -377,7 +377,7 @@ def api_checkin():
     date_str = body.get("date") or default_study_date(st)
     n = day_index(date_str)
     if n is None:
-        return jsonify({"error": "日期不在84天计划内"}), 400
+        return jsonify({"error": "日期不在计划内"}), 400
     before = set(earned(st, compute_stats(st)))
     with _LOCK:
         e = day_entry(st, date_str)
@@ -1035,7 +1035,7 @@ def api_hw_submit():
     n = day_index(date_str)
     pd = apply_track(DAYS.get(n), get_state())
     if not pd:
-        return jsonify({"error": "所选日期不在84天计划内，找不到要批改的作业"}), 400
+        return jsonify({"error": "所选日期不在计划内，找不到要批改的作业"}), 400
     system = (
         f"你是学习台的AI老师，正在批改学生D{n}《{pd['title']}》的课后编程作业。"
         f"作业要求【{pd['hw']['t']}】：{pd['hw']['d']}（期望：{pd['hw']['e']}）。\n"
@@ -1488,7 +1488,7 @@ def api_digest_generate():
     force = bool(body.get("force"))
     n = day_index(date_str)
     if n is None:
-        return jsonify({"error": "日期不在84天计划内"}), 400
+        return jsonify({"error": "日期不在计划内"}), 400
     cpath = _digest_path(date_str)
     if cpath.exists() and not force:
         return jsonify({"cached": True, **load_json(cpath)})
@@ -1726,7 +1726,7 @@ def api_fetch_next():
         n = (day_index(study_today().isoformat()) or 0) + 1
         date_str = (study_today() + datetime.timedelta(days=1)).isoformat()
     if n is None or n > TOTAL:
-        return jsonify({"error": "没有更晚的计划日了(已到D84)"}), 400
+            return jsonify({"error": "没有更晚的计划日了(已到最后一天)"}), 400
     if not _FETCH_LOCK.acquire(blocking=False):
         return jsonify({"error": "正在抓取中，稍等"}), 409
     try:

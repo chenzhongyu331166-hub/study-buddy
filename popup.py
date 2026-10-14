@@ -132,7 +132,7 @@ class Reminder:
             self.pd = next((d for d in self.plan["days"] if d["day"] == self.n), None)
 
         self.root = tk.Tk()
-        self.root.title("84天速成CS · 提醒")
+        self.root.title("学伴 StudyBuddy · 提醒")
         self.root.configure(bg=BG)
         self.root.attributes("-topmost", True)
         self.root.resizable(False, False)
@@ -166,7 +166,7 @@ class Reminder:
         self.body.pack(fill="both", expand=True, **pad)
 
         if not self.pd:
-            tk.Label(self.body, text="今天不在84天计划内\n(休息日或已毕业)", bg=BG, fg=DIM,
+            tk.Label(self.body, text="今天不在计划内\n(休息日或已毕业)", bg=BG, fg=DIM,
                      font=("Microsoft YaHei", 10)).pack(pady=20)
             self.closable = True
         else:

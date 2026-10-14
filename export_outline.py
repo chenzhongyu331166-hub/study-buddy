@@ -1,23 +1,29 @@
 # -*- coding: utf-8 -*-
-"""导出《84天课程大纲.md》(供 ima 资料库 / 打印 / GitHub 阅读)"""
-import json
+"""导出《课程大纲.md》(供资料库 / 打印 / GitHub 阅读)。
 
-PLAN_PATH = r"D:\VibeBuddy\study-buddy\plan.json"
-OUT_PATH = r"D:\VibeBuddy\study-buddy\84天课程大纲.md"
+从 plan.json 生成；路径全部相对脚本所在目录，换台电脑也能直接跑。
+使用：python export_outline.py
+"""
+import json
+import os
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+PLAN_PATH = os.path.join(ROOT, "plan.json")
+OUT_PATH = os.path.join(ROOT, "课程大纲.md")
 
 plan = json.load(open(PLAN_PATH, encoding="utf-8"))
 meta = plan["meta"]
+TOTAL = meta.get("total_days") or len(plan["days"])
 lines = []
 A = lines.append
 
-A("# 84天Vibecoding学习大纲")
+A("# 学伴 StudyBuddy · 课程大纲")
 A("")
-A(f"- 起止：{meta['start']} 起，共 {meta['total_days']} 天（D84 = 最后一天）")
-A("- 主线：AI应用开发 | 副线：数据分析 | 备份：408考研基础")
-A("- 节奏：每天3个任务 + 知识点 + 教材资源 + 1个动手编程作业（自己写代码）")
+A(f"- 计划周期：{meta['start']} 起，共 {TOTAL} 天（D{TOTAL} = 最后一天）")
+A("- 节奏：每天若干任务 + 知识点 + 教材资源 + 1 个动手编程作业（自己写代码）")
 A(f"- 说明：{meta['note']}")
 A("")
-A("## 十二阶段一览")
+A(f"## 阶段一览（共 {len(plan['stages'])} 个阶段）")
 A("")
 A("| 阶段 | 名称 | 天数 | 目标 |")
 A("|---|---|---|---|")
@@ -43,5 +49,4 @@ for d in plan["days"]:
     A("")
 
 open(OUT_PATH, "w", encoding="utf-8").write("\n".join(lines))
-import os
-print("written", os.path.getsize(OUT_PATH), "bytes")
+print("written", os.path.getsize(OUT_PATH), "bytes ->", OUT_PATH)

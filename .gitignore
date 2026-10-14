@@ -5,3 +5,8 @@ data/
 resources/
 *.tmp
 .vscode/
+
+# 本地备份 / 损坏件（不入库）
+*.bak-*
+*.corrupt-*
+plan.backup_*.json

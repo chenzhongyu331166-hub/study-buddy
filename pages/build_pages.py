@@ -34,8 +34,8 @@ def build():
             "k": d.get("tasks") or [],
             "hw": {"t": hw.get("t", ""), "d": hw.get("d", ""), "e": hw.get("e", "")},
             "kp": d.get("kp") or [],
-            "r": [{"title": x.get("title", ""), "url": x.get("url", "")}
-                  for x in (d.get("resources") or [])],
+            "r": [{"title": x.get("t", ""), "url": x.get("u", ""), "src": x.get("src", "")}
+                  for x in (d.get("res") or [])],
             "prod": (d.get("product") or "") if isinstance(d.get("product"), str) else "",
         })
     payload = json.dumps(days, ensure_ascii=False, separators=(",", ":"))
@@ -43,21 +43,21 @@ def build():
                    .replace("__START__", start_date()) \
                    .replace("__MAXDAY__", str(len(days)))
     OUT.write_text(html, encoding="utf-8")
-    # GitHub Pages 只接受 / 或 /docs 作为发布目录，这里同步一份到 docs/
+    # GitHub Pages 只接受 / 或 /docs 作为发布目录，这里同步一份到 docs/demo.html
     docs = ROOT / "docs"
     docs.mkdir(exist_ok=True)
-    (docs / "index.html").write_text(html, encoding="utf-8")
+    (docs / "demo.html").write_text(html, encoding="utf-8")
     nj = docs / ".nojekyll"
     if not nj.exists():
         nj.write_text("", encoding="utf-8")
-    print("wrote %s + docs/index.html (%d days, %.1f KB)"
+    print("wrote %s + docs/demo.html (%d days, %.1f KB)"
           % (OUT, len(days), len(html) / 1024))
 
 
 TEMPLATE = r"""<!DOCTYPE html>
 <html lang="zh-CN"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>今日任务 · 学习台</title>
+<title>在线体验 · 学伴 StudyBuddy</title>
 <style>
 :root{--bg:#0f1117;--panel:#181b24;--line:#2b3040;--fg:#e8eaf0;--dim:#98a0b3;--acc:#6aa5e8;--ok:#4caf7d;--warn:#e0a44c}
 *{box-sizing:border-box}
@@ -86,8 +86,9 @@ pre{white-space:pre-wrap;word-break:break-word;background:#131722;border:1px sol
 .hint{background:#1b2430;border-left:3px solid var(--acc);padding:8px 10px;border-radius:0 8px 8px 0;font-size:13px}
 .ok{color:var(--ok);font-weight:700}
 </style></head><body><div class="wrap">
-<h1>今日任务</h1>
+<h1>学伴 StudyBuddy · 在线体验</h1>
 <div class="muted" id="sub">加载中…</div>
+<div class="muted" style="margin-top:4px"><a href="./index.html">← 返回产品介绍</a> · 这是学习台「今日任务」的只读在线版，可翻看计划、打勾（存在本机浏览器）</div>
 
 <div class="nav" style="margin-top:10px">
   <button onclick="go(-1)">‹ 前一天</button>
