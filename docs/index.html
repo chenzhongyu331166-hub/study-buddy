@@ -4,76 +4,169 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>学伴 StudyBuddy · 给自学的人一个 AI 陪练</title>
+<meta name="description" content="学伴 StudyBuddy：给「想自学一门技术却没人带」的人，一个 AI 全程陪练的本地学习台。已真实使用 19 天，开源、本地运行、零订阅成本。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236a8cff'/%3E%3Cstop offset='1' stop-color='%23b06cff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Cpath d='M14 19 Q23 13 32 19 Q41 13 50 19 L50 45 Q41 39 32 45 Q23 39 14 45 Z' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linejoin='round'/%3E%3Cline x1='32' y1='19' x2='32' y2='45' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
 <style>
-:root{--bg:#0f1117;--panel:#161a24;--line:#2b3040;--fg:#e8eaf0;--dim:#98a0b3;--acc:#6a8cff;--acc2:#b06cff;--ok:#4caf7d}
+:root{--bg:#0b0d14;--panel:#141824;--panel2:#1a1f2e;--line:#2b3040;--fg:#eef0f6;--dim:#98a0b3;--acc:#6a8cff;--acc2:#b06cff;--ok:#4caf7d;--gold:#f0da4e}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b2140 0%,var(--bg) 55%) fixed;color:var(--fg);font:16px/1.75 system-ui,"Microsoft YaHei",sans-serif}
-a{color:var(--acc);text-decoration:none}
-a:hover{text-decoration:underline}
-.wrap{max-width:920px;margin:0 auto;padding:34px 20px 70px}
-.hero{text-align:center;padding:26px 0 8px}
-.logo{width:76px;height:76px;vertical-align:middle}
-h1{font-size:34px;margin:14px 0 6px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
-.tag{font-size:18px;color:var(--fg);margin:0 0 4px}
-.sub{color:var(--dim);font-size:14px;max-width:640px;margin:6px auto 0}
-.btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:22px 0 6px}
-.btn{display:inline-block;padding:11px 22px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-weight:600}
-.btn.p{background:linear-gradient(90deg,var(--acc),var(--acc2));border:0;color:#0b1020}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 system-ui,"Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(11,13,20,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .in{max-width:1040px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:18px}
+nav .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px}
+nav .brand svg{width:30px;height:30px}
+nav .sp{flex:1}
+nav .lk{color:var(--dim);font-size:14.5px;margin-left:16px}
+nav .lk:hover{color:var(--fg)}
+nav .cta{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#0b1020;padding:8px 16px;border-radius:9px;font-weight:700;font-size:14px;margin-left:16px}
+/* hero */
+.hero{position:relative;overflow:hidden;text-align:center;padding:74px 0 30px}
+.hero::before{content:"";position:absolute;inset:-40% -20% auto;height:640px;background:radial-gradient(60% 60% at 50% 0,#26306a 0%,rgba(11,13,20,0) 70%);z-index:-1}
+.eyebrow{display:inline-block;font-size:12.5px;letter-spacing:.22em;color:var(--acc2);border:1px solid var(--line);border-radius:999px;padding:6px 14px;margin-bottom:20px;background:rgba(106,140,255,.06)}
+h1{font-size:56px;line-height:1.1;margin:0 0 14px;background:linear-gradient(92deg,#fff 20%,var(--acc) 60%,var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900;letter-spacing:-.5px}
+.tag{font-size:20px;color:var(--fg);margin:0 0 12px;font-weight:600}
+.sub{color:var(--dim);font-size:15.5px;max-width:720px;margin:0 auto}
+.btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:30px 0 10px}
+.btn{display:inline-block;padding:13px 26px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-weight:600;font-size:15.5px;transition:.18s}
+.btn.p{background:linear-gradient(90deg,var(--acc),var(--acc2));border:0;color:#0b1020;font-weight:800;box-shadow:0 10px 34px -12px var(--acc)}
+.btn:hover{transform:translateY(-1px)}
+.muted{color:var(--dim);font-size:13px}
+/* stats */
+.stats{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:34px 0 6px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 20px;min-width:132px}
+.stat b{display:block;font-size:26px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900}
+.stat span{font-size:12.5px;color:var(--dim)}
+/* media */
+.media{margin:34px auto 0;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px -30px #000;background:#000}
+.media video{display:block;width:100%}
+/* section */
+h2{font-size:25px;margin:64px 0 8px;font-weight:800}
+h2 .k{color:var(--acc2)}
+.lead{color:var(--dim);margin:0 0 16px;font-size:15px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
-h2{font-size:20px;margin:34px 0 6px;color:var(--acc2)}
-.muted{color:var(--dim);font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:12px}
-.feat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.feat b{display:block;margin-bottom:4px;font-size:15px}
-.feat span{color:var(--dim);font-size:13.5px}
-.shots{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.shots img{width:100%;border:1px solid var(--line);border-radius:10px;display:block}
-@media(max-width:640px){.shots{grid-template-columns:1fr}h1{font-size:27px}}
-pre{background:#0c0f16;border:1px solid var(--line);border-radius:10px;padding:14px;overflow:auto;font:13.5px/1.6 Consolas,monospace;color:#cfe0ff}
-.note{border-left:3px solid var(--acc);background:#141a2a;padding:10px 14px;border-radius:0 8px 8px 0;color:var(--dim);font-size:13.5px}
-footer{color:var(--dim);font-size:13px;text-align:center;margin-top:40px;border-top:1px solid var(--line);padding-top:18px}
-.footlinks{margin-bottom:6px}
-.footlinks a{margin:0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}
+.feat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;transition:.18s}
+.feat:hover{border-color:#39406a;transform:translateY(-2px)}
+.feat .ic{font-size:20px}
+.feat b{display:block;margin:8px 0 5px;font-size:16px}
+.feat span{color:var(--dim);font-size:14px}
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:16px}
+.big{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:22px}
+.big b{font-size:18px;display:block;margin-bottom:6px}
+.big p{color:var(--dim);font-size:14px;margin:0}
+.shots{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.shots img{width:100%;border:1px solid var(--line);border-radius:12px;display:block}
+.steps{counter-reset:s;margin-top:14px}
+.step{position:relative;padding:16px 18px 16px 62px;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:12px}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:18px;top:16px;width:30px;height:30px;border-radius:9px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#0b1020;font-weight:800;display:flex;align-items:center;justify-content:center}
+.step b{font-size:15.5px}
+.step span{color:var(--dim);font-size:14px}
+table.iter{width:100%;border-collapse:collapse;margin-top:14px;font-size:14.5px}
+table.iter th,table.iter td{border-bottom:1px solid var(--line);padding:12px 10px;text-align:left;vertical-align:top}
+table.iter th{color:var(--acc2);font-size:13px;letter-spacing:.04em}
+pre{background:#0a0c13;border:1px solid var(--line);border-radius:12px;padding:16px;overflow:auto;font:13.5px/1.7 Consolas,monospace;color:#cfe0ff}
+code{background:#0a0c13;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-family:Consolas,monospace;font-size:13px;color:#ffd98a}
+.note{border-left:3px solid var(--acc);background:#12182a;padding:11px 15px;border-radius:0 9px 9px 0;color:var(--dim);font-size:13.5px}
+footer{color:var(--dim);font-size:13px;text-align:center;margin:60px 0 0;border-top:1px solid var(--line);padding:26px 0 40px}
+.footlinks a{margin:0 9px;color:var(--dim)}
+.footlinks a:hover{color:var(--fg)}
+@media(max-width:640px){h1{font-size:38px}.shots{grid-template-columns:1fr}nav .lk{display:none}}
 </style>
 </head>
 <body>
+
+<nav>
+  <div class="in">
+    <a class="brand" href="./index.html">
+      <svg viewBox="0 0 64 64"><defs><linearGradient id="g0" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a8cff"/><stop offset="1" stop-color="#b06cff"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#g0)"/><path d="M14 19 Q23 13 32 19 Q41 13 50 19 L50 45 Q41 39 32 45 Q23 39 14 45 Z" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/><line x1="32" y1="19" x2="32" y2="45" stroke="#fff" stroke-width="3"/></svg>
+      学伴 StudyBuddy
+    </a>
+    <span class="sp"></span>
+    <a class="lk" href="#features">功能</a>
+    <a class="lk" href="#shots">界面</a>
+    <a class="lk" href="#try">亲手验证</a>
+    <a class="lk" href="https://github.com/chenzhongyu331166-hub/study-buddy" target="_blank" rel="noopener">GitHub</a>
+    <a class="cta" href="./app.html">打开在线体验</a>
+  </div>
+</nav>
+
 <div class="wrap">
 
   <div class="hero">
-    <svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a8cff"/><stop offset="1" stop-color="#b06cff"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#g)"/><path d="M14 19 Q23 13 32 19 Q41 13 50 19 L50 45 Q41 39 32 45 Q23 39 14 45 Z" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/><line x1="32" y1="19" x2="32" y2="45" stroke="#fff" stroke-width="3"/></svg>
+    <span class="eyebrow">开源 · 本地运行 · 零成本</span>
     <h1>学伴 StudyBuddy</h1>
     <p class="tag">给「想自学一门技术却没人带」的人，一个 AI 全程陪练的本地学习台</p>
-    <p class="sub">每日任务打卡 · AI 老师批改作业 · 自动抓教材做教程汇总 · 终端式真机代码练习——全部本地运行、免费 AI 额度，不花一分钱订阅。</p>
+    <p class="sub">每日任务打卡 · AI 老师批改作业 · 自动抓教材做教程汇总 · 终端式真机代码练习——把「计划 → 教程 → 练习 → 批改 → 打卡」整条链路收进一个网页，全部本地运行、只用免费 AI 额度，不花一分钱订阅。</p>
     <div class="btns">
       <a class="btn p" href="./app.html">▸ 打开在线体验（完整界面）</a>
-      <a class="btn" href="https://github.com/chenzhongyu331166-hub/study-buddy" target="_blank" rel="noopener">GitHub 源码</a>
+      <a class="btn" href="https://github.com/chenzhongyu331166-hub/study-buddy" target="_blank" rel="noopener">查看 GitHub 源码</a>
     </div>
-    <p class="muted" style="font-size:12.5px;margin-top:6px">在线体验为纯前端演示：<b>界面与真实产品完全一致</b>，数据为示例、只存你本机浏览器；AI 功能点左下角「⚙ AI 设置」填入你自己的模型接口即可真实对话。</p>
+    <p class="muted">在线体验为纯前端演示：<b>界面与真实产品完全一致</b>，数据为示例、只存你本机浏览器；AI 功能点左下角「⚙ AI 设置」填入自己的模型接口即可真实对话。</p>
+
+    <div class="stats">
+      <div class="stat"><b>19</b><span>天真实使用</span></div>
+      <div class="stat"><b>28</b><span>次 AI 批改</span></div>
+      <div class="stat"><b>14</b><span>份教程汇总</span></div>
+      <div class="stat"><b>9</b><span>套界面皮肤</span></div>
+      <div class="stat"><b>27</b><span>天课程大纲</span></div>
+    </div>
   </div>
 
-  <h2>为什么做它</h2>
-  <div class="card">
-    大学生自学最大的坎不是「缺教程」，而是<b>从看教程到真正动手的那段路没人带</b>：不知道在哪个文件夹写代码、代码怎么存成文件、报错怎么解、计划怎么坚持。学伴把「计划 → 教程 → 练习 → 批改 → 打卡」整条链路收进一个本地网页，并用免费 AI 额度当陪练。
+  <div class="media">
+    <video controls preload="metadata" poster="./shots/today-default.png">
+      <source src="./demo.mp4" type="video/mp4">
+      你的浏览器不支持视频播放，请点「打开在线体验」或查看 GitHub。
+    </video>
   </div>
 
-  <h2>核心功能</h2>
+  <h2>它解决的不是「缺教程」，而是<span class="k">没人带的那段路</span></h2>
+  <p class="lead">大学生自学最大的坎，是从「看教程」到「真正动手」之间的空白：不知道在哪个文件夹写代码、代码怎么存成文件、报错怎么解、计划怎么坚持。</p>
+
+  <div class="three">
+    <div class="big"><b>🖥️ 跑的是本机真 Python</b><p>在真实文件系统里建文件、执行脚本，traceback 原样显示——不是沙箱演示，学生练的就是真本事。</p></div>
+    <div class="big"><b>🧑‍🏫 真 AI 批改作业</b><p>贴代码直通大模型：完成度 / 问题清单 / 改法建议 / 得分，存档可回看，等于每个学生配一个随时在的助教。</p></div>
+    <div class="big"><b>💸 零订阅成本</b><p>全部本地运行、只调用免费 AI 额度，数据不出本机。预算有限的学生也用得起。</p></div>
+  </div>
+
+  <h2 id="features">核心功能</h2>
   <div class="grid">
-    <div class="feat"><b>自适应学习计划</b><span>一门技术拆成每天小任务（任务+知识点+教材+编程作业），天数可长可短</span></div>
-    <div class="feat"><b>AI 老师批改作业</b><span>贴代码直通 AI 深度批改：完成度/问题/改法/得分，记录可回看</span></div>
-    <div class="feat"><b>每日教程汇总</b><span>AI 读当天抓取的教材正文，分节讲解 + 练习题，答案默认隐藏</span></div>
-    <div class="feat"><b>真机代码练习区</b><span>跑本机真 Python，traceback 原样显示，报错附中文白话贴士</span></div>
-    <div class="feat"><b>进度与成就</b><span>计划日历、阶段完成度、成就墙，交过作业的日期带金色光边</span></div>
-    <div class="feat"><b>本地 + 免费额度</b><span>数据存本机，隐私不出门；AI 只用免费额度，零订阅成本</span></div>
+    <div class="feat"><div class="ic">🗓️</div><b>自适应学习计划</b><span>一门技术拆成每天 3 个小任务（任务+知识点+教材+编程作业），天数可长可短（本项目即由 84 天压缩为 27 天）。</span></div>
+    <div class="feat"><div class="ic">📖</div><b>每日教程汇总</b><span>AI 读当天抓取的教材正文，分节讲解 + 练习题（答案默认隐藏），把「自己啃文档」变成「每天读一页被嚼碎的内容」。</span></div>
+    <div class="feat"><div class="ic">🧪</div><b>真机代码练习区</b><span>终端式交互运行，跑本机真 Python；支持运行中继续输入，报错附中文白话贴士。</span></div>
+    <div class="feat"><div class="ic">📝</div><b>AI 老师批改</b><span>完成度 / 问题 / 改法 / 得分，记录可回看，批完一键标记完成。</span></div>
+    <div class="feat"><div class="ic">📂</div><b>本地项目 AI 审阅</b><span>把整个作业文件夹（文件树 + 全部源码 + 当天任务）交给 AI，按需求对照 / 结构 / 问题清单 / 亮点 / 下一步输出。</span></div>
+    <div class="feat"><div class="ic">🏅</div><b>激励系统</b><span>每日弹窗提醒 + 连续打卡 + 进度日历（交过作业带金色光边）+ 成就墙。</span></div>
+    <div class="feat"><div class="ic">📱</div><b>手机可用</b><span>通过隧道在手机浏览器访问，碎片时间也能打卡学习。</span></div>
+    <div class="feat"><div class="ic">🔓</div><b>开源可自部署</b><span>代码开源（MIT），任何人可下载、自建、换自己的 AI key；数据存本地。</span></div>
   </div>
 
-  <h2>界面一览</h2>
+  <h2 id="shots">界面一览</h2>
+  <p class="lead">9 套皮肤一键切换（含浅色「香槟」），手机也可访问。</p>
   <div class="shots">
-    <img src="./shots/today-default.png" alt="默认皮肤 · 今日">
-    <img src="./shots/today-deepblue.png" alt="深蓝皮肤">
-    <img src="./shots/progress-glow.png" alt="进度页">
-    <img src="./shots/today-champagne.png" alt="香槟浅色皮肤">
+    <img src="./shots/today-default.png" alt="默认皮肤 · 今日学习台" loading="lazy">
+    <img src="./shots/today-deepblue.png" alt="深蓝皮肤" loading="lazy">
+    <img src="./shots/progress-glow.png" alt="进度统计与打卡日历" loading="lazy">
+    <img src="./shots/today-champagne.png" alt="香槟浅色皮肤" loading="lazy">
   </div>
+
+  <h2 id="try">3 分钟亲手验证</h2>
+  <div class="steps">
+    <div class="step"><b>打开完整界面</b><br><span><a href="./app.html" style="color:var(--acc)">/study-buddy/app.html</a> —— 今日 3 个任务、教程汇总与题目、9 套皮肤、日历打卡记录，全部可点。</span></div>
+    <div class="step"><b>看开源代码</b><br><span><a href="https://github.com/chenzhongyu331166-hub/study-buddy" target="_blank" rel="noopener" style="color:var(--acc)">github.com/chenzhongyu331166-hub/study-buddy</a> —— 全部业务代码、README、Release、27 天课程大纲（MIT）。</span></div>
+    <div class="step"><b>看 69 秒演示视频</b><br><span>上方视频逐一走过：今日任务 → 教程汇总 → 代码练习 → AI 批改 → 皮肤 / 大纲 / 进度 / 资源 / 成就。</span></div>
+  </div>
+
+  <h2>这些功能是<span class="k">用出来的</span>，不是拍脑袋规划的</h2>
+  <p class="lead">真实使用中暴露问题、再修好——这是产品被打磨过的最好证据。</p>
+  <table class="iter">
+    <tr><th>真实问题</th><th>修复</th></tr>
+    <tr><td>某天没打卡，第二天直接被推到下一课</td><td>改为<b>缺勤自动顺延</b>：没学的那天往后压，绝不跳天</td></tr>
+    <tr><td>凌晨 00:02 交的作业被系统判成「第二天」</td><td>把「今天」的定义改为<b>早 7 点才翻天</b>，贴合学生作息</td></tr>
+    <tr><td>用户反馈「任务太难、和教程脱节」</td><td>把当天任务清单喂给 AI，<b>教程汇总必须逐条支撑当天任务</b>，「精读」改为一页嚼碎的汇总</td></tr>
+  </table>
 
   <h2>部署到你自己的电脑</h2>
   <div class="card">
@@ -95,7 +188,7 @@ start.bat        :: 自动打开 http://127.0.0.1:5000</pre>
       <a href="https://github.com/chenzhongyu331166-hub/study-buddy/blob/main/课程大纲.md" target="_blank" rel="noopener">课程大纲</a>·
       <a href="https://github.com/chenzhongyu331166-hub/study-buddy/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
     </div>
-    <div>学伴 StudyBuddy · 本地自建 AI 学习台 · 2026</div>
+    <div>学伴 StudyBuddy · 本地自建 AI 学习台 · 数据截至 2026-10-16</div>
   </footer>
 
 </div>
