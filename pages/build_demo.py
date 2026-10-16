@@ -21,9 +21,50 @@ TMP_CAPTURE = Path(os.environ.get(
 OUT = ROOT / "docs" / "app.html"
 
 
+_SAMPLE_SUBS = {
+    "2026-09-27": [
+        {"day": 2, "t": "2026-09-27T20:12:00", "model": "示例模型",
+         "code": 'radius = float(input("请输入半径："))\narea = 3.14159 * radius ** 2\nprint(f"面积约为 {area:.2f}")\n',
+         "feedback": "1) 完成度：\n- 读取半径 ✅\n- 公式正确 ✅\n- 格式化输出 ✅\n\n2) 问题清单：\n- 建议：给常量起个名字，如 PI = 3.14159，避免魔法数字。\n\n3) 改法：\n- PI = 3.14159\n- area = PI * radius ** 2\n\n4) 得分：9/10\n\n5) 一句鼓励：公式与格式化都对了，再讲究一点常量命名就更好。"},
+        {"day": 2, "t": "2026-09-27T20:40:00", "model": "示例模型",
+         "code": 'for i in range(1, 6):\n    print(i, "的平方是", i * i)\n',
+         "feedback": "1) 完成度：\n- 循环写法 ✅\n- 输出平方 ✅\n\n2) 问题清单：\n- 建议：用 f-string 让输出更整齐。\n\n3) 改法：\n- print(f\"{i} 的平方是 {i * i}\")\n\n4) 得分：8/10\n\n5) 一句鼓励：循环已经用得很顺了。"},
+    ],
+    "2026-09-29": [
+        {"day": 4, "t": "2026-09-29T21:05:00", "model": "示例模型",
+         "code": 'def c_to_f(c):\n    return c * 9 / 5 + 32\n\nprint(c_to_f(25))\n',
+         "feedback": "1) 完成度：\n- 定义函数 ✅\n- 返回换算结果 ✅\n\n2) 问题清单：\n- 建议：加一句注释说明输入单位。\n\n3) 改法：\n- # 摄氏转华氏\n\n4) 得分：9/10\n\n5) 一句鼓励：函数封装思路清晰。"},
+    ],
+}
+
+
+def _sanitize(data):
+    """演示页脱敏：只保留结构与统计，去掉一切私密正文（聊天/作业代码/笔记）。"""
+    data["chat"] = {"messages": [], "profile": ""}
+    data["mysave"] = {"saves": {}}
+    data["runfiles"] = {"dir": "", "files": []}
+    data["submissions"] = {"subs": {k: [dict(x) for x in v] for k, v in _SAMPLE_SUBS.items()}}
+    today = data.get("today")
+    if isinstance(today, dict) and isinstance(today.get("entry"), dict):
+        today["entry"]["hw_note"] = ""
+    st = (data.get("state") or {}).get("state")
+    if isinstance(st, dict):
+        st["subs"] = {k: [] for k in (st.get("subs") or {})}
+        ai = st.get("ai")
+        if isinstance(ai, dict):
+            ai["log"] = []
+        ck = st.get("checkins")
+        if isinstance(ck, dict):
+            for v in ck.values():
+                if isinstance(v, dict):
+                    v["hw_note"] = ""
+    return data
+
+
 def load_snapshot():
     if TMP_CAPTURE.exists():
         data = json.load(open(TMP_CAPTURE, encoding="utf-8"))
+        data = _sanitize(data)
         # 隐私：聊天记录不公开
         data["chat"] = {"messages": [], "profile": ""}
         # 精简作业批改：只留最近 3 天、每天最多 3 条
