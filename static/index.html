@@ -233,6 +233,11 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 .loading{color:var(--dim);font-size:13px}
 .fileitem{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px dashed var(--line);font-size:13px}
 @media(max-width:820px){.grid2{grid-template-columns:1fr}.cal{grid-template-columns:repeat(7,1fr)}}
+/* 便签模式：只看今天要做什么 —— 代码运行/批改/审阅这些高级卡片全部隐藏 */
+body.notemode .adv{display:none!important}
+body.notemode .advbtn{display:none!important}
+.copybar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+#copyMsg{font-size:13px;color:var(--ok)}
 </style>
 </head>
 <body>
@@ -258,7 +263,8 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     <button data-p="ai">AI老师</button>
     <button data-p="ach">成就</button>
   </nav>
-  <select id="skinSel" class="modelsel" title="切换皮肤" style="max-width:130px;margin-left:10px"></select>
+  <button class="btn ghost" id="modeBtn" title="便签模式只看今天要做的，完整模式多出所有功能" style="margin-left:10px;padding:5px 12px">🖥 完整模式</button>
+  <select id="skinSel" class="modelsel" title="切换皮肤" style="max-width:130px;margin-left:6px"></select>
 </header>
 <main>
 
@@ -275,6 +281,11 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
   <div class="grid2">
     <div class="card">
       <h2>今日任务</h2>
+      <div class="copybar">
+        <button class="btn" onclick="copyToday()">📋 复制今日任务（发给豆包）</button>
+        <button class="btn ghost" onclick="copyDigest()">📄 复制教程汇总</button>
+        <span id="copyMsg"></span>
+      </div>
       <div id="taskList"></div>
       <h3>课后编程作业(自己写，不会就问AI)</h3>
       <div class="task" id="hwBox">
@@ -306,11 +317,11 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
 
   <div class="card">
     <h2>今日教程汇总 <span class="tag">AI读正文整理 · 含每日刷题</span></h2>
-    <div class="muted" style="margin-bottom:8px">不用点开原文：AI把抓取正文按知识点讲清楚+要点+练习题，题目都在各节里，答案默认隐藏点按钮才显示；点【载入练习区开写】题干+起手模板一起进练习区，参考答案可单独导入。有疑问点每节的【问这个知识点】直达AI老师。</div>
+    <div class="muted" style="margin-bottom:8px">AI 把抓取正文按知识点讲清楚 + 要点 + 练习题，答案默认隐藏点【显示参考答案】才显示。想动手就自己开 VS Code 写；有疑问点每节的【问这个知识点】。</div>
     <div id="digestBox" class="loading">检查中...</div>
   </div>
 
-  <div class="card">
+  <div class="card adv">
     <details class="card" id="scratchCard">
     <summary style="cursor:pointer;font-size:15px"><b>🧪 临时试验区</b> <span class="tag">代码你在 VS Code 里自己写自己建文件，这里只放 5 分钟试想法</span></summary>
     <h2 style="margin-top:10px">代码练习区 <span class="tag">真实运行Python · 报错原样显示</span></h2>
@@ -339,7 +350,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
   </div>
   </details>
 
-  <div class="card">
+  <div class="card adv">
     <h2>作业提交区 <span class="tag">直通AI老师 · 深度批改</span></h2>
     <div class="muted" style="margin-bottom:8px"><b>推荐做法</b>：在 VS Code 里写完代码、把项目文件夹放进「本地项目」根目录 → 点【📥 交给AI审阅整个项目】，AI 读你写的真实文件并自动勾上作业。如果你只是临时贴一段代码，用下面这个框也行。</div>
     <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap">
@@ -360,7 +371,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     <div class="subhist" id="subHist"></div>
   </div>
 
-  <div class="card" id="gitDayCard" style="display:none">
+  <div class="card adv" id="gitDayCard" style="display:none">
     <h2>今日 · git 跟练 <span class="tag">点一下给一条命令，照着敲就行</span></h2>
     <div class="muted" style="margin-bottom:8px">git 就是"给文件夹拍快照"，每提交一次就存一版，改坏了随时能退回去。下面每点一步都给一条命令和它该出现的结果——<b>不需要理解语法，照着做就能完成今天的任务</b>。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -371,7 +382,7 @@ textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid v
     <div id="gitAll" style="display:none;margin-top:10px"></div>
   </div>
 
-  <div class="card" id="workCard">
+  <div class="card adv" id="workCard">
     <h2>本地项目 · 交给AI审阅 <span class="tag">你自己建文件，AI 只读不改</span></h2>
     <div class="muted" style="margin-bottom:8px">你在 VS Code 里写好的项目，<b>自己把文件夹放进下面这个根目录下</b>，选它 → AI 审阅<b>整个文件夹</b>（文件结构 + 全部源码 + 对照当天作业要求），只读不改、不会新建或覆盖你的任何文件。零上传：学习台就跑在这台电脑上，直接读。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -793,11 +804,11 @@ function renderDigest(r){
           <details id="qdet_${kn}"><summary>题${kn}：${esc(ex.q)}${badge} <span class="muted">(${esc(s.kp)})</span><span id="mm_${i}_${j}">${mineGet(dgDate(),'题'+kn)?' 💾已存':''}</span></summary>
             <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn ghost" onclick="toggleAns(this)">👁 显示参考答案</button>
-              <button class="btn ghost" onclick="loadStarter(${i},${j})">▶ 载入练习区开写</button>
-              <button class="btn ghost" onclick="importAns(${i},${j})">📤 参考答案导入练习区</button>
+              <button class="btn ghost advbtn" onclick="loadStarter(${i},${j})">▶ 载入练习区开写</button>
+              <button class="btn ghost advbtn" onclick="importAns(${i},${j})">📤 参考答案导入练习区</button>
               <button class="btn ghost" onclick="askExercise(${i},${j})">这题不会，问AI</button>
-              <button class="btn ghost" onclick="saveMine(${i},${j})" title="把练习区当前代码存为这道题的版本，进度页点日期可回看">💾 存我的代码</button>
-              <button class="btn ghost" onclick="loadMine(${i},${j})">📥 载入我的代码</button>
+              <button class="btn ghost advbtn" onclick="saveMine(${i},${j})" title="把练习区当前代码存为这道题的版本，进度页点日期可回看">💾 存我的代码</button>
+              <button class="btn ghost advbtn" onclick="loadMine(${i},${j})">📥 载入我的代码</button>
             </div>
             <div class="ansbox" style="display:none;margin-top:6px"><b>参考答案：</b>${esc(ex.a||'')}</div>
             ${ex.starter?`<div class="starter">${esc(ex.starter)}</div>`:''}
@@ -1546,9 +1557,76 @@ async function renderAch(){
     <div class="muted" style="margin-top:6px;color:${c.got?'var(--ok)':'var(--dim)'}">${c.got?'已解锁':'未解锁'}</div></div>`).join('');
 }
 
+// ---------- 便签模式 / 复制任务 ----------
+// 便签模式：只看「今天要做什么 + 打勾 + 复制去问豆包」，代码运行/批改/审阅全部收起。
+// 需要时点右上角切「完整模式」。默认便签模式(首次打开)。
+function applyMode(){
+  const note=localStorage.getItem('notemode')!=='0';
+  document.body.classList.toggle('notemode',note);
+  const b=$('#modeBtn');
+  if(b)b.textContent=note?'🖥 完整模式':'📋 便签模式';
+  if(b)b.title=note?'点开：显示代码运行/批改/审阅等全部功能':'点回：只看今天要做什么';
+}
+function toggleMode(){
+  localStorage.setItem('notemode',localStorage.getItem('notemode')==='0'?'1':'0');
+  applyMode();
+}
+function _say(msg,bad){
+  const el=$('#copyMsg');if(!el)return;
+  el.style.color=bad?'var(--bad)':'var(--ok)';
+  el.textContent=msg;setTimeout(()=>{if(el)el.textContent=''},2500);
+}
+function _copy(text,tag){
+  const done=()=>_say(tag+' 已复制',false);
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(done).catch(()=>_fallbackCopy(text,done));}
+  else _fallbackCopy(text,done);
+}
+function _fallbackCopy(text,done){
+  try{
+    const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';
+    document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();done();
+  }catch(e){_say('复制失败，请手动选中复制',true)}
+}
+function todayPlainText(){
+  const t=TODAY,pd=t&&t.plan_day;if(!pd)return '';
+  const L=[];
+  L.push('D'+t.day+'《'+pd.title+'》');
+  L.push('');
+  L.push('【今天要做的】');
+  (pd.tasks||[]).forEach((x,i)=>L.push((i+1)+'. '+x));
+  L.push('');
+  L.push('【课后作业】'+((pd.hw&&pd.hw.t)||''));
+  if(pd.hw&&pd.hw.d){L.push('要求：'+pd.hw.d);}
+  if(pd.hw&&pd.hw.e){L.push('期望：'+pd.hw.e);}
+  L.push('');
+  L.push('【知识点】'+((pd.kp||[]).join('、')));
+  const r=(pd.res||[]).map(x=>x.t+' '+x.u).join('\n');
+  if(r){L.push('');L.push('【参考资料链接】');L.push(r);}
+  return L.join('\n');
+}
+function copyToday(){
+  const s=todayPlainText();
+  if(!s){_say('今天没有任务',true);return;}
+  _copy(s,'今日任务');
+}
+function copyDigest(){
+  const secs=(typeof DIGEST!=='undefined'&&DIGEST&&DIGEST.sections)?DIGEST.sections:[];
+  if(!secs.length){_say('还没有教程汇总，点下面的【重新生成】先生成',true);return;}
+  const L=['D'+(TODAY?TODAY.day:'')+' 今日教程汇总'];
+  secs.forEach((s,i)=>{
+    L.push('');L.push((i+1)+'. '+s.kp);L.push(s.summary||'');
+    (s.points||[]).forEach(p=>L.push('· '+p));
+    (s.exercises||[]).forEach((e,k)=>{L.push('  题'+(k+1)+'：'+(e.q||''));if(e.a)L.push('    参考答案：'+e.a);});
+  });
+  if(DIGEST&&DIGEST.note){L.push('');L.push('💡 '+DIGEST.note);}
+  _copy(L.join('\n'),'教程汇总');
+}
+
 // ---------- 启动 ----------
 (async function(){
   try{
+    applyMode();
+    const mb=$('#modeBtn');if(mb)mb.onclick=toggleMode;
     initSkin();
     PLAN=await api('/api/plan');
     TODAY=await api('/api/today'); // 默认学习日由后端定(缺哪天压到哪天，不跳天)
