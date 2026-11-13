@@ -1,9 +1,9 @@
 {
   "meta": {
     "start": "2026-09-26",
-    "total_days": 27,
-    "generated": "2026-10-06T21:35:09",
-    "note": "D1-D9 为已完成的历史(内容与原85天版完全一致，未做任何改动)；D10 起为压缩后的紧凑内容(初级够用路线)。原85天完整版保留在 plan_kaoyan_85d.json。写代码在 VS Code 真实环境完成，学习台负责教程/任务/进度/AI审阅。"
+    "total_days": 30,
+    "generated": "2026-11-13T15:00:00",
+    "note": "D1-D9 为已完成的历史（内容与原 85 天版一致，未改动）；D10-D27 为紧凑的初级够用路线；D28-D30 为 2026-11-13 追加的「看懂报错」补强阶段（Python / C / 工具链），配合已确定的方向：不考研，走技术产品经理线。写代码在 VS Code 真实环境完成，学习台负责教程/任务/进度。原 85 天考研版仅存档在 plan_kaoyan_85d.json，不再使用。"
   },
   "days": [
     {
@@ -841,7 +841,7 @@
       "stage": 6,
       "title": "收尾：总结与下一步路线",
       "tasks": [
-        "收尾：三个月总结 + 下一步路线（考研与否这时可以定了）",
+        "收尾：三个月总结 + 下一步路线（已确定不考研，走技术产品经理线）",
         "投递准备：找实习渠道 + 做一份目标岗位清单",
         "完成练习：写一份下一步 3 个月计划"
       ],
@@ -852,7 +852,7 @@
       ],
       "hw": {
         "t": "阶段收尾：总结与路线",
-        "d": "产出 docs/三个月总结.md + docs/下一步路线.md（含考研与否的结论与理由）+ ≥8 个目标岗位清单",
+        "d": "产出 docs/三个月总结.md + docs/下一步路线.md（含『不考研、走技术产品经理』的结论与理由）+ ≥8 个目标岗位清单",
         "e": "路线明确、有下一步动作"
       },
       "res": [
@@ -860,6 +860,115 @@
           "t": "人人都是产品经理",
           "u": "https://www.woshipm.com/",
           "src": "woshipm.com"
+        }
+      ]
+    },
+    {
+      "day": 28,
+      "date": "2026-10-23",
+      "stage": 7,
+      "title": "读懂 Python 报错：traceback 从下往上看",
+      "tasks": [
+        "认结构：最后一行=错误类型+原因，往上找第一个「自己写的文件」那一行",
+        "记 8 个高频异常：SyntaxError / IndentationError / NameError / TypeError / KeyError / IndexError / AttributeError / ModuleNotFoundError",
+        "练习：拿 5 条真实报错，各写一句「哪行、什么错、怎么改」"
+      ],
+      "kp": [
+        "traceback 的阅读顺序",
+        "高频异常类型对照表",
+        "最小复现：把报错缩到 3 行"
+      ],
+      "hw": {
+        "t": "报错翻译本（Python）",
+        "d": "把最近遇到的 5 条真实报错写进 docs/报错笔记.md，每条三段：原文 / 人话 / 改法",
+        "e": "5 条齐全，每一条都能用一句话讲清错在哪"
+      },
+      "res": [
+        {
+          "t": "Python 官方教程 · 错误与异常（中文）",
+          "u": "https://docs.python.org/zh-cn/3/tutorial/errors.html",
+          "src": "docs.python.org"
+        },
+        {
+          "t": "Python 内置异常列表（查名字用）",
+          "u": "https://docs.python.org/zh-cn/3/library/exceptions.html",
+          "src": "docs.python.org"
+        }
+      ]
+    },
+    {
+      "day": 29,
+      "date": "2026-10-24",
+      "stage": 7,
+      "title": "看懂 C 编译错误：面试官问的就是这个",
+      "tasks": [
+        "分清两类错：编译错（expected ';'、undeclared identifier）和链接错（undefined reference）",
+        "认 6 个高频：expected ';' / undeclared identifier / implicit declaration / conflicting types / undefined reference / Segmentation fault",
+        "练习：读 5 段 gcc 报错，指出「文件:行:列 → 错误 → 最可能原因」"
+      ],
+      "kp": [
+        "编译四步：预处理 / 编译 / 汇编 / 链接",
+        "C 高频报错对照表",
+        "段错误与未定义行为"
+      ],
+      "hw": {
+        "t": "C 报错卡 ×6",
+        "d": "做 6 张卡（报错原文 / 人话 / 典型原因 / 怎么改），至少含 1 个 undefined reference、1 个 segfault",
+        "e": "6 张卡，能不看着稿子讲清每张"
+      },
+      "res": [
+        {
+          "t": "cppreference · C 语言（中文）",
+          "u": "https://zh.cppreference.com/w/c/language",
+          "src": "zh.cppreference.com"
+        },
+        {
+          "t": "GCC 官方手册（查报错选项）",
+          "u": "https://gcc.gnu.org/onlinedocs/gcc/",
+          "src": "gcc.gnu.org"
+        },
+        {
+          "t": "Compiler Explorer（在线编译 C，亲眼看报错）",
+          "u": "https://godbolt.org/",
+          "src": "godbolt.org"
+        }
+      ]
+    },
+    {
+      "day": 30,
+      "date": "2026-10-25",
+      "stage": 7,
+      "title": "看懂工具链与 Agent 报错：环境、依赖、端口、编码",
+      "tasks": [
+        "认 6 类环境错：command not found / ModuleNotFoundError / pip 装不上 / 端口被占用 / Permission denied / 中文路径与编码",
+        "学三招定位：只看第一条错、复制关键行去搜、最小复现（换目录 / 换版本 / 关占用）",
+        "练习：给自己的工具链写一张「报错→处理」速查表（≥10 条）"
+      ],
+      "kp": [
+        "环境与依赖类报错",
+        "端口 / 权限 / 编码",
+        "最小复现与求助模板"
+      ],
+      "hw": {
+        "t": "我的报错速查表",
+        "d": "整理 docs/报错速查表.md：≥10 条「报错关键词 → 人话 → 处理步骤」，覆盖 Python、Git、端口、编码",
+        "e": "10 条都能照着直接做，下次遇到不用重查"
+      },
+      "res": [
+        {
+          "t": "MDN · JavaScript 错误参考（中文）",
+          "u": "https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Errors",
+          "src": "developer.mozilla.org"
+        },
+        {
+          "t": "Node.js 错误文档",
+          "u": "https://nodejs.org/api/errors.html",
+          "src": "nodejs.org"
+        },
+        {
+          "t": "Pro Git（中文）",
+          "u": "https://git-scm.com/book/zh/v2",
+          "src": "git-scm.com"
         }
       ]
     }
@@ -897,23 +1006,23 @@
     },
     {
       "stage": 6,
-      "name": "产品思维与项目收尾",
+      "name": "技术产品经理：产品思维与项目收尾",
       "range": "D21-27",
-      "goal": "需求/指标/PRD/用户研究，完成并总结个人项目"
+      "goal": "需求/指标/PRD/用户研究，完成并总结个人项目，按技术产品经理方向收尾"
+    },
+    {
+      "stage": 7,
+      "name": "补强：看懂报错",
+      "range": "D28-30",
+      "goal": "能独立读懂 Python traceback、C 编译/链接错误、工具链与环境报错，说清「哪行、什么错、怎么改」"
     }
   ],
   "tracks": {
-    "kaoyan": {
-      "name": "考研路线",
-      "range": "见 plan_kaoyan_85d.json",
-      "desc": "如需考研（含408四门+冲刺），用 plan_kaoyan_85d.json 切回85 天版"
+    "pm": {
+      "name": "技术产品经理线",
+      "range": "D1-30",
+      "desc": "Python 手感→工程习惯→数据→SQL→Web→产品与作品集→看懂报错；已确定不考研，目标是看懂技术、能跟研发对话"
     },
-    "primary": {
-      "name": "紧凑版·初级够用",
-      "range": "D1-27",
-      "desc": "Python手感→工程能力→数据→SQL→Web→产品与作品集；不考研不实习两用"
-    },
-    "switchable_from": 999,
-    "note": "当前为紧凑版；考研版见 plan_kaoyan_85d.json（需我切换）"
+    "note": "唯一路线。考研版 plan_kaoyan_85d.json 仅作存档，不再使用。"
   }
 }

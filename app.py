@@ -62,11 +62,11 @@ DAYS = {d["day"]: d for d in PLAN["days"]}
 STAGES = PLAN["stages"]
 
 
-# ---------- 双线（考研线 / PM线）：D1-D43 共用，从 D44 起可一键切换 ----------
+# ---------- 学习路线：技术产品经理线（考研版仅存档，不再使用） ----------
 def current_track(st=None):
     st = st if st is not None else get_state()
-    t = str((st.get("track") or "kaoyan")).strip()
-    return t if t in ("kaoyan", "pm") else "kaoyan"
+    t = str((st.get("track") or "pm")).strip()
+    return t if t in ("kaoyan", "pm") else "pm"
 
 
 def apply_track(day, st=None):
@@ -122,19 +122,45 @@ def save_state(st):
     save_json(STATE_PATH, st)
 
 
+def day_need(st, n):
+    """Dn 当天应有几条任务（按计划/当前路线）。"""
+    d = DAYS.get(n)
+    if not d:
+        return 3
+    return len((apply_track(d, st) or {}).get("tasks") or []) or 1
+
+
+def day_need_done(st, n):
+    """判定「这天算不算完成」用的任务数。
+    历史兼容：旧记录的格子比计划少，说明那天是在计划扩条之前打的卡
+    （D7 就是 3 格 vs 现在 4 条任务），不能事后加高门槛把人退回已完成的日子。
+    已有记录不改写，就一直按它自己的条数算。"""
+    plan_need = day_need(st, n)
+    e = st["checkins"].get(DAYS[n]["date"]) or {}
+    have = len(e.get("tasks") or [])
+    return min(plan_need, have) if 0 < have < plan_need else plan_need
+
+
 def day_entry(st, date_str):
+    """取/建某天的打卡记录。新建时任务格数按计划走：
+    以前写死 3 格——2 条任务的日子(D21)多出一个空格让 all() 永远为假，
+    人就被卡在那天不动；4 条任务的日子又会少一格。已有记录保持原样不动。"""
+    n = day_index(date_str)
+    need = day_need(st, n) if n else 3
     return st["checkins"].setdefault(
-        date_str, {"tasks": [False, False, False], "hw": False, "hw_note": "", "updated": ""}
+        date_str, {"tasks": [False] * need, "hw": False, "hw_note": "", "updated": ""}
     )
 
 
 def first_undone_day(st):
-    """当前该学第几天：第一个任务没全勾的计划日。
+    """当前该学第几天：第一个没做完的计划日（按当天真实任务数判断）。
     缺勤规则(2026.9.29)：哪天没打卡，那天的课自动往后压——次日打开仍是它，
     不跳到下一天；补完才推进。全部计划日任务完成则返回 None。"""
     for n in range(1, TOTAL + 1):
         e = st["checkins"].get(DAYS[n]["date"], {})
-        if not e or not all(e.get("tasks", [])):
+        need = day_need_done(st, n)
+        got = sum(1 for x in (e.get("tasks") or [])[:need] if x)
+        if got < need:
             return n
     return None
 
@@ -149,19 +175,23 @@ def default_study_date(st):
 
 # ---------- 进度与成就 ----------
 def compute_stats(st):
-    total_tasks = TOTAL * 3
+    total_tasks = sum(day_need_done(st, n) for n in range(1, TOTAL + 1))
     done_tasks = 0
     perfect_task_days = 0
     full_days = 0
     hw_done = 0
     for date_str, e in st["checkins"].items():
-        t = sum(1 for x in e.get("tasks", []) if x)
+        n = day_index(date_str)
+        if not n:
+            continue
+        need = day_need_done(st, n)
+        t = min(sum(1 for x in (e.get("tasks") or []) if x), need)
         done_tasks += t
-        if t == 3:
+        if t >= need:
             perfect_task_days += 1
         if e.get("hw"):
             hw_done += 1
-        if t == 3 and e.get("hw"):
+        if t >= need and e.get("hw"):
             full_days += 1
 
     # 连续天数(按学习日序，2026.9.29改)：从D1起连续完成的天数。
@@ -182,9 +212,10 @@ def compute_stats(st):
         lo, hi = (int(x) for x in s["range"][1:].split("-"))
         pts, got = 0, 0
         for n in range(lo, hi + 1):
+            need = day_need_done(st, n)
             e = st["checkins"].get(DAYS[n]["date"], {})
-            pts += 3
-            got += sum(1 for x in e.get("tasks", []) if x)
+            pts += need
+            got += min(sum(1 for x in (e.get("tasks") or []) if x), need)
         stage_pct[s["stage"]] = round(got * 100 / pts) if pts else 0
 
     return {
@@ -242,8 +273,11 @@ ACHIEVEMENTS = [
 
 
 def _day_full(st, day_no):
-    e = st["checkins"].get(DAYS[day_no]["date"], {})
-    return all(e.get("tasks", [])) and e.get("hw")
+    d = DAYS[day_no]
+    need = day_need_done(st, day_no)
+    e = st["checkins"].get(d["date"], {})
+    got = sum(1 for x in (e.get("tasks") or [])[:need] if x)
+    return got >= need and bool(e.get("hw"))
 
 
 def earned(st, stats):
